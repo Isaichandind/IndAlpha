@@ -1,5 +1,5 @@
 import React from 'react';
-import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { TrendingUp, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import type { MarketMoversData } from '../types';
 
 interface MarketMoversProps {
