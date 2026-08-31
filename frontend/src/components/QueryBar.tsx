@@ -75,7 +75,7 @@ export function QueryBar({ onResults, onLoading }: QueryBarProps) {
 
   return (
     <div className="relative" ref={helpRef}>
-      <div className="flex items-center gap-2 bg-gray-900/80 border border-gray-700 rounded-lg p-1 pl-3">
+      <div className="flex items-center gap-2 bg-indalpha-card/80 border border-indalpha-border rounded-lg p-1 pl-3">
         <Terminal className="w-4 h-4 text-indalpha-green shrink-0" />
         <input
           ref={inputRef}
@@ -85,7 +85,7 @@ export function QueryBar({ onResults, onLoading }: QueryBarProps) {
           onKeyDown={handleKeyDown}
           onFocus={() => setShowHelp(true)}
           placeholder="Query: ROCE > 20 AND PE < 30 AND Market Cap > 5000"
-          className="bg-transparent text-sm text-white flex-1 focus:outline-none placeholder:text-gray-500 font-mono py-1.5"
+          className="bg-transparent text-sm text-indalpha-text flex-1 focus:outline-none placeholder:text-indalpha-muted font-mono py-1.5"
         />
         {resultCount !== null && (
           <span className="text-[10px] text-indalpha-green bg-indalpha-green/10 border border-indalpha-green/30 px-2 py-0.5 rounded font-mono shrink-0">
@@ -107,14 +107,14 @@ export function QueryBar({ onResults, onLoading }: QueryBarProps) {
       )}
 
       {showHelp && (
-        <div className="absolute top-full mt-2 left-0 w-full bg-gray-900/95 backdrop-blur-md border border-gray-700 rounded-xl shadow-2xl p-4 z-50 animate-fade-in">
+        <div className="absolute top-full mt-2 left-0 w-full bg-indalpha-card/95 backdrop-blur-md border border-indalpha-border rounded-xl shadow-2xl p-4 z-50 animate-fade-in">
           <div className="text-[10px] uppercase text-indalpha-muted tracking-wider mb-2 font-semibold">Available Fields</div>
           <div className="flex flex-wrap gap-1.5 mb-4">
             {FIELD_SUGGESTIONS.map(f => (
               <span
                 key={f}
                 onClick={() => setQuery(prev => prev ? `${prev} AND ${f} ` : `${f} `)}
-                className="text-[11px] bg-gray-800 text-indalpha-text px-2 py-0.5 rounded cursor-pointer hover:bg-gray-700 hover:text-white transition-colors border border-gray-700"
+                className="text-[11px] bg-indalpha-card text-indalpha-text px-2 py-0.5 rounded cursor-pointer hover:bg-gray-700 hover:text-indalpha-text transition-colors border border-indalpha-border"
               >
                 {f}
               </span>
@@ -126,14 +126,14 @@ export function QueryBar({ onResults, onLoading }: QueryBarProps) {
               <button
                 key={eq}
                 onClick={() => insertExample(eq)}
-                className="w-full text-left text-xs text-gray-400 hover:text-indalpha-green font-mono py-1 px-2 rounded hover:bg-gray-800 transition-colors"
+                className="w-full text-left text-xs text-indalpha-muted hover:text-indalpha-green font-mono py-1 px-2 rounded hover:bg-indalpha-card transition-colors"
               >
                 {eq}
               </button>
             ))}
           </div>
-          <div className="mt-3 pt-2 border-t border-gray-800 text-[10px] text-gray-600">
-            Operators: <code className="text-gray-500">&gt;</code> <code className="text-gray-500">&gt;=</code> <code className="text-gray-500">&lt;</code> <code className="text-gray-500">&lt;=</code> <code className="text-gray-500">=</code> • Combine with <code className="text-gray-500">AND</code>
+          <div className="mt-3 pt-2 border-t border-indalpha-border text-[10px] text-gray-600">
+            Operators: <code className="text-indalpha-muted">&gt;</code> <code className="text-indalpha-muted">&gt;=</code> <code className="text-indalpha-muted">&lt;</code> <code className="text-indalpha-muted">&lt;=</code> <code className="text-indalpha-muted">=</code> • Combine with <code className="text-indalpha-muted">AND</code>
           </div>
         </div>
       )}

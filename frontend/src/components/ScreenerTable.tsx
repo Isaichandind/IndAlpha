@@ -91,22 +91,22 @@ export const ScreenerTable: React.FC<ScreenerTableProps> = ({ stocks, loading, o
   };
 
   return (
-    <div className="bg-indalpha-card rounded-lg border border-gray-800 flex flex-col h-full relative overflow-hidden">
+    <div className="bg-indalpha-card rounded-lg border border-indalpha-border flex flex-col h-full relative overflow-hidden">
       
       {/* Table Toolbar */}
-      <div className="flex justify-end p-2 border-b border-gray-800 bg-gray-900/50">
+      <div className="flex justify-end p-2 border-b border-indalpha-border bg-indalpha-card/50">
         <div className="relative">
           <button 
             onClick={() => setShowColumnMenu(!showColumnMenu)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white text-xs rounded transition-colors border border-gray-700 hover:border-gray-600"
+            className="flex items-center gap-2 px-3 py-1.5 bg-indalpha-card hover:bg-gray-700 text-indalpha-text text-xs rounded transition-colors border border-indalpha-border hover:border-indalpha-border"
           >
             <Settings2 size={14} />
             Columns
           </button>
           
           {showColumnMenu && (
-            <div className="absolute right-0 top-full mt-2 w-56 bg-[#15181e] border border-gray-700 rounded-lg shadow-2xl z-50 py-2">
-              <div className="px-3 pb-2 mb-2 border-b border-gray-800 text-[10px] text-indalpha-green font-bold uppercase tracking-wider">Toggle Columns</div>
+            <div className="absolute right-0 top-full mt-2 w-56 bg-indalpha-card border border-indalpha-border rounded-lg shadow-2xl z-50 py-2">
+              <div className="px-3 pb-2 mb-2 border-b border-indalpha-border text-[10px] text-indalpha-green font-bold uppercase tracking-wider">Toggle Columns</div>
               <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
                 {ALL_COLUMNS.map(col => (
                   <label 
@@ -117,10 +117,10 @@ export const ScreenerTable: React.FC<ScreenerTableProps> = ({ stocks, loading, o
                       toggleColumn(col.key);
                     }}
                   >
-                    <div className={`w-4 h-4 rounded border flex items-center justify-center mr-3 ${visibleColumns.has(col.key) ? 'bg-indalpha-green border-indalpha-green text-black' : 'border-gray-600 group-hover:border-gray-400'}`}>
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center mr-3 ${visibleColumns.has(col.key) ? 'bg-indalpha-green border-indalpha-green text-black' : 'border-indalpha-border group-hover:border-gray-400'}`}>
                       {visibleColumns.has(col.key) && <Check size={12} strokeWidth={4} />}
                     </div>
-                    <span className={`text-sm ${visibleColumns.has(col.key) ? 'text-white font-medium' : 'text-gray-400 group-hover:text-gray-200'}`}>{col.label}</span>
+                    <span className={`text-sm ${visibleColumns.has(col.key) ? 'text-indalpha-text font-medium' : 'text-indalpha-muted group-hover:text-indalpha-text'}`}>{col.label}</span>
                   </label>
                 ))}
               </div>
@@ -131,7 +131,7 @@ export const ScreenerTable: React.FC<ScreenerTableProps> = ({ stocks, loading, o
 
       <div className="overflow-x-auto flex-1 custom-scrollbar">
         <table className="min-w-full text-left text-sm text-indalpha-text whitespace-nowrap">
-          <thead className="bg-gray-900 border-b border-gray-800 text-xs uppercase text-indalpha-muted sticky top-0 z-10">
+          <thead className="bg-indalpha-card border-b border-indalpha-border text-xs uppercase text-indalpha-muted sticky top-0 z-10">
             <tr>
               {ALL_COLUMNS.map(col => visibleColumns.has(col.key) && (
                 <th key={col.key} className={`px-6 py-4 font-semibold ${col.key === 'alpha' ? 'text-center' : ''}`}>
@@ -144,13 +144,13 @@ export const ScreenerTable: React.FC<ScreenerTableProps> = ({ stocks, loading, o
             {stocks.map((stock, idx) => (
               <tr
                 key={stock.ticker}
-                className="hover:bg-gray-800/50 transition-colors cursor-pointer group"
+                className="hover:bg-indalpha-card/50 transition-colors cursor-pointer group"
                 onClick={() => handleRowClick(stock)}
               >
                 {visibleColumns.has('rank') && <td className="px-6 py-4 text-indalpha-muted font-mono">{String(idx + 1).padStart(2, '0')}</td>}
                 {visibleColumns.has('ticker') && (
                   <td className="px-6 py-4">
-                    <div className="font-bold text-white group-hover:text-indalpha-green transition-colors">{stock.ticker}</div>
+                    <div className="font-bold text-indalpha-text group-hover:text-indalpha-green transition-colors">{stock.ticker}</div>
                     <div className="text-xs text-indalpha-muted truncate w-32 md:w-48">{stock.company_name}</div>
                     {stock.last_updated_date && stock.last_updated_date !== new Date().toISOString().split('T')[0] && (
                       <div className="text-[10px] text-yellow-500/80 mt-1 italic font-medium tracking-wide">
@@ -160,7 +160,7 @@ export const ScreenerTable: React.FC<ScreenerTableProps> = ({ stocks, loading, o
                   </td>
                 )}
                 {visibleColumns.has('ltp') && (
-                  <td className="px-6 py-4 font-semibold text-white">
+                  <td className="px-6 py-4 font-semibold text-indalpha-text">
                     <div className="flex flex-col">
                       <span>₹{stock.ltp.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       {stock.change_pct !== undefined && (
@@ -183,18 +183,18 @@ export const ScreenerTable: React.FC<ScreenerTableProps> = ({ stocks, loading, o
                 )}
                 {visibleColumns.has('roce') && (
                   <td className="px-6 py-4">
-                    <div className="text-white">{stock.roce}% ROCE</div>
+                    <div className="text-indalpha-text">{stock.roce}% ROCE</div>
                     <div className="text-xs text-indalpha-green">{stock.roe}% ROE</div>
                   </td>
                 )}
-                {visibleColumns.has('pe') && <td className="px-6 py-4 text-white font-mono">{stock.pe_ratio > 0 ? stock.pe_ratio.toFixed(2) : '-'}</td>}
-                {visibleColumns.has('eps') && <td className="px-6 py-4 text-white font-mono">{stock.eps > 0 ? `₹${stock.eps.toFixed(2)}` : '-'}</td>}
-                {visibleColumns.has('pb') && <td className="px-6 py-4 text-white font-mono">{stock.pb_ratio > 0 ? stock.pb_ratio.toFixed(2) : '-'}</td>}
-                {visibleColumns.has('div') && <td className="px-6 py-4 text-white font-mono">{stock.dividend_yield > 0 ? `${stock.dividend_yield.toFixed(2)}%` : '-'}</td>}
-                {visibleColumns.has('de') && <td className="px-6 py-4 text-white font-mono">{stock.debt_to_equity.toFixed(2)}</td>}
-                {visibleColumns.has('ph') && <td className="px-6 py-4 text-white font-mono">{stock.promoter_holding.toFixed(2)}%</td>}
+                {visibleColumns.has('pe') && <td className="px-6 py-4 text-indalpha-text font-mono">{stock.pe_ratio > 0 ? stock.pe_ratio.toFixed(2) : '-'}</td>}
+                {visibleColumns.has('eps') && <td className="px-6 py-4 text-indalpha-text font-mono">{stock.eps > 0 ? `₹${stock.eps.toFixed(2)}` : '-'}</td>}
+                {visibleColumns.has('pb') && <td className="px-6 py-4 text-indalpha-text font-mono">{stock.pb_ratio > 0 ? stock.pb_ratio.toFixed(2) : '-'}</td>}
+                {visibleColumns.has('div') && <td className="px-6 py-4 text-indalpha-text font-mono">{stock.dividend_yield > 0 ? `${stock.dividend_yield.toFixed(2)}%` : '-'}</td>}
+                {visibleColumns.has('de') && <td className="px-6 py-4 text-indalpha-text font-mono">{stock.debt_to_equity.toFixed(2)}</td>}
+                {visibleColumns.has('ph') && <td className="px-6 py-4 text-indalpha-text font-mono">{stock.promoter_holding.toFixed(2)}%</td>}
                 
-                {visibleColumns.has('pledge') && <td className="px-6 py-4 text-white">{stock.pledged_promoter}%</td>}
+                {visibleColumns.has('pledge') && <td className="px-6 py-4 text-indalpha-text">{stock.pledged_promoter}%</td>}
                 
                 {visibleColumns.has('delivery') && (
                   <td className="px-6 py-4">
@@ -205,7 +205,7 @@ export const ScreenerTable: React.FC<ScreenerTableProps> = ({ stocks, loading, o
                   </td>
                 )}
                 
-                {visibleColumns.has('bv') && <td className="px-6 py-4 text-white font-mono">{stock.book_value > 0 ? `₹${stock.book_value.toFixed(2)}` : '-'}</td>}
+                {visibleColumns.has('bv') && <td className="px-6 py-4 text-indalpha-text font-mono">{stock.book_value > 0 ? `₹${stock.book_value.toFixed(2)}` : '-'}</td>}
                 
                 {visibleColumns.has('tag') && (
                   <td className="px-6 py-4">

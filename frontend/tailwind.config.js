@@ -7,15 +7,16 @@ export default {
   theme: {
     extend: {
       colors: {
-        'indalpha-dark': '#0f1115',
-        'indalpha-card': '#1a1d24',
-        'indalpha-green': '#10b981',
-        'indalpha-red': '#ef4444',
-        'indalpha-text': '#e2e8f0',
-        'indalpha-muted': '#94a3b8',
-        'indalpha-blue': '#3b82f6',
-        'indalpha-orange': '#f59e0b',
-        'indalpha-purple': '#8b5cf6',
+        'indalpha-dark': 'rgb(var(--indalpha-dark) / <alpha-value>)',
+        'indalpha-card': 'rgb(var(--indalpha-card) / <alpha-value>)',
+        'indalpha-green': 'rgb(var(--indalpha-green) / <alpha-value>)',
+        'indalpha-red': 'rgb(var(--indalpha-red) / <alpha-value>)',
+        'indalpha-text': 'rgb(var(--indalpha-text) / <alpha-value>)',
+        'indalpha-muted': 'rgb(var(--indalpha-muted) / <alpha-value>)',
+        'indalpha-blue': 'rgb(var(--indalpha-blue) / <alpha-value>)',
+        'indalpha-orange': 'rgb(var(--indalpha-orange) / <alpha-value>)',
+        'indalpha-purple': 'rgb(var(--indalpha-purple) / <alpha-value>)',
+        'indalpha-border': 'rgb(var(--indalpha-border) / <alpha-value>)',
       },
       animation: {
         'slide-in-right': 'slideInRight 0.25s ease-out',

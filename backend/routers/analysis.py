@@ -86,7 +86,7 @@ def analyze_stock(
     if not stock:
         raise HTTPException(status_code=404, detail="Stock not found")
         
-    api_key = x_gemini_api_key or os.environ.get("GEMINI_API_KEY")
+    api_key = x_gemini_api_key
     if not api_key:
         raise HTTPException(status_code=401, detail="GEMINI API Key is required. Please provide it in the X-Gemini-Api-Key header.")
         
@@ -150,3 +150,49 @@ def analyze_stock(
     except Exception as e:
         print(f"Gemini API Error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to generate analysis: {str(e)}")
+
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str
+
+class ChatRequest(BaseModel):
+    messages: List[ChatMessage]
+
+@router.post("/chat")
+def chat_with_ai(
+    request: ChatRequest,
+    x_gemini_api_key: Optional[str] = Header(None),
+    x_gemini_model: Optional[str] = Header(None)
+):
+    api_key = x_gemini_api_key
+    if not api_key:
+        raise HTTPException(status_code=401, detail="GEMINI API Key is required. Please provide it in the X-Gemini-Api-Key header.")
+        
+    try:
+        # Use a faster, lighter model for general chat if possible, or fallback to the provided one
+        target_model = x_gemini_model or "gemini-3.1-flash"
+        client = genai.Client(api_key=api_key)
+        
+        # Format history for Gemini API
+        contents = []
+        for msg in request.messages:
+            # Gemini roles are 'user' and 'model'
+            role = "user" if msg.role == "user" else "model"
+            contents.append(
+                types.Content(role=role, parts=[types.Part.from_text(text=msg.content)])
+            )
+            
+        system_instruction = "You are Alpha AI, a professional financial AI assistant for the IndAlpha stock market platform. You help users analyze the markets, understand financial metrics, and make data-driven decisions. Keep your answers concise, accurate, and professional."
+            
+        response = client.models.generate_content(
+            model=target_model,
+            contents=contents,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                temperature=0.7,
+            )
+        )
+        return {"reply": response.text}
+    except Exception as e:
+        print(f"Gemini Chat Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate chat response: {str(e)}")

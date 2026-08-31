@@ -5,6 +5,70 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --indalpha-dark: 15 17 21; /* #0f1115 */
+    --indalpha-card: 26 29 36; /* #1a1d24 */
+    --indalpha-green: 16 185 129; /* #10b981 */
+    --indalpha-red: 239 68 68; /* #ef4444 */
+    --indalpha-text: 226 232 240; /* #e2e8f0 */
+    --indalpha-muted: 148 163 184; /* #94a3b8 */
+    --indalpha-blue: 59 130 246; /* #3b82f6 */
+    --indalpha-orange: 245 158 11; /* #f59e0b */
+    --indalpha-purple: 139 92 246; /* #8b5cf6 */
+    --indalpha-border: 39 42 48; /* #272a30 */
+  }
+
+  [data-theme="oled"] {
+    --indalpha-dark: 0 0 0; /* #000000 */
+    --indalpha-card: 10 10 10; /* #0a0a0a */
+    --indalpha-green: 16 185 129; /* #10b981 */
+    --indalpha-red: 239 68 68; /* #ef4444 */
+    --indalpha-text: 226 232 240; /* #e2e8f0 */
+    --indalpha-muted: 82 82 82; /* #525252 */
+    --indalpha-blue: 59 130 246; /* #3b82f6 */
+    --indalpha-orange: 245 158 11; /* #f59e0b */
+    --indalpha-purple: 139 92 246; /* #8b5cf6 */
+    --indalpha-border: 23 23 23; /* #171717 */
+  }
+
+  [data-theme="forest"] {
+    --indalpha-dark: 5 25 20; /* #051914 */
+    --indalpha-card: 8 38 30; /* #08261e */
+    --indalpha-green: 52 211 153; /* #34d399 */
+    --indalpha-red: 239 68 68; /* #ef4444 */
+    --indalpha-text: 236 253 245; /* #ecfdf5 */
+    --indalpha-muted: 110 231 183; /* #6ee7b7 */
+    --indalpha-blue: 59 130 246; /* #3b82f6 */
+    --indalpha-orange: 245 158 11; /* #f59e0b */
+    --indalpha-purple: 139 92 246; /* #8b5cf6 */
+    --indalpha-border: 6 78 59; /* #064e3b */
+  }
+
+  [data-theme="ocean"] {
+    --indalpha-dark: 2 6 23; /* #020617 */
+    --indalpha-card: 15 23 42; /* #0f172a */
+    --indalpha-green: 16 185 129; /* #10b981 */
+    --indalpha-red: 239 68 68; /* #ef4444 */
+    --indalpha-text: 248 250 252; /* #f8fafc */
+    --indalpha-muted: 100 116 139; /* #64748b */
+    --indalpha-blue: 56 189 248; /* #38bdf8 */
+    --indalpha-orange: 245 158 11; /* #f59e0b */
+    --indalpha-purple: 139 92 246; /* #8b5cf6 */
+    --indalpha-border: 30 41 59; /* #1e293b */
+  }
+
+  [data-theme="light"] {
+    --indalpha-dark: 248 250 252; /* #f8fafc */
+    --indalpha-card: 255 255 255; /* #ffffff */
+    --indalpha-green: 5 150 105; /* #059669 */
+    --indalpha-red: 220 38 38; /* #dc2626 */
+    --indalpha-text: 15 23 42; /* #0f172a */
+    --indalpha-muted: 100 116 139; /* #64748b */
+    --indalpha-blue: 37 99 235; /* #2563eb */
+    --indalpha-orange: 217 119 6; /* #d97706 */
+    --indalpha-purple: 124 58 237; /* #7c3aed */
+    --indalpha-border: 226 232 240; /* #e2e8f0 */
+  }
   body {
     @apply bg-indalpha-dark text-indalpha-text;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;

@@ -4,7 +4,7 @@ import type { FundamentalAnalysisResponse } from '../types';
 import { 
   CheckCircle2, AlertTriangle, XCircle, ChevronRight, 
   BrainCircuit, ShieldAlert, TrendingUp, BarChart3,
-  Activity, Scale, Shield, Factory, FileWarning, Settings
+  Activity, Scale, Shield, Factory, FileWarning
 } from 'lucide-react';
 
 interface Props {
@@ -21,7 +21,6 @@ export const FundamentalAnalysis: React.FC<Props> = ({ symbol }) => {
       try {
         setLoading(true);
         setError(null);
-        const apiKey = localStorage.getItem('gemini_api_key');
         let aiModel = localStorage.getItem('gemini_model') || 'gemini-3.1-pro-preview';
         
         // Auto-upgrade deprecated models to latest to fix 404 NOT_FOUND errors dynamically for all users
@@ -29,22 +28,28 @@ export const FundamentalAnalysis: React.FC<Props> = ({ symbol }) => {
           aiModel = 'gemini-3.1-pro-preview';
           localStorage.setItem('gemini_model', aiModel);
         }
-        
+
+        const apiKey = localStorage.getItem('gemini_api_key');
+
         if (!apiKey) {
-          setError('API_KEY_MISSING');
+          setError("Please configure your Gemini API Key in Settings to run AI Analysis.");
           setLoading(false);
           return;
         }
 
         const res = await api.get(`/stock/${symbol}/analyze`, {
-          headers: { 
-            'X-Gemini-Api-Key': apiKey,
-            'X-Gemini-Model': aiModel
+          headers: {
+            'X-Gemini-Model': aiModel,
+            'X-Gemini-Api-Key': apiKey
           }
         });
         setData(res.data);
       } catch (err: any) {
-        setError(err.response?.data?.detail || err.message || "Failed to run analysis");
+        if (err.response?.status === 401) {
+          setError("Invalid or missing Gemini API Key. Please update it in Settings.");
+        } else {
+          setError(err.response?.data?.detail || err.message || "Failed to run analysis");
+        }
       } finally {
         setLoading(false);
       }
@@ -57,26 +62,8 @@ export const FundamentalAnalysis: React.FC<Props> = ({ symbol }) => {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <BrainCircuit className="w-12 h-12 text-indalpha-green animate-pulse mb-4" />
-        <div className="text-white text-lg font-medium tracking-wide">AI Engine Analyzing {symbol}...</div>
-        <div className="text-gray-400 text-sm mt-2">Computing 6-Dimension Composite Score</div>
-      </div>
-    );
-  }
-
-  if (error === 'API_KEY_MISSING') {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 animate-fade-in">
-        <BrainCircuit className="w-16 h-16 text-gray-600 mb-6" />
-        <h3 className="text-xl font-bold text-white mb-2">AI Engine Requires Setup</h3>
-        <p className="text-gray-400 text-center max-w-md mb-6">
-          To run deep fundamental analysis, please provide your Google Gemini API Key in the settings. This key is stored securely in your browser and is only sent directly to the AI service.
-        </p>
-        <button 
-          onClick={() => document.dispatchEvent(new CustomEvent('open-settings'))}
-          className="bg-indalpha-green text-black px-6 py-2.5 rounded-lg font-bold hover:bg-emerald-400 transition-colors flex items-center gap-2"
-        >
-          <Settings className="w-4 h-4" /> Open Settings
-        </button>
+        <div className="text-indalpha-text text-lg font-medium tracking-wide">AI Engine Analyzing {symbol}...</div>
+        <div className="text-indalpha-muted text-sm mt-2">Computing 6-Dimension Composite Score</div>
       </div>
     );
   }
@@ -98,7 +85,7 @@ export const FundamentalAnalysis: React.FC<Props> = ({ symbol }) => {
       case 'QUALITY_ACCUMULATE_ON_DIPS': return 'bg-blue-500/20 text-blue-400 border-blue-500/40';
       case 'WATCHLIST_NEUTRAL': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/40';
       case 'AVOID_OR_EXIT': return 'bg-red-500/20 text-red-400 border-red-500/40';
-      default: return 'bg-gray-800 text-gray-300 border-gray-700';
+      default: return 'bg-indalpha-card text-indalpha-text border-indalpha-border';
     }
   };
 
@@ -116,7 +103,7 @@ export const FundamentalAnalysis: React.FC<Props> = ({ symbol }) => {
     if (risk === "LOW") return "text-indalpha-green";
     if (risk === "MEDIUM") return "text-yellow-400";
     if (risk === "HIGH") return "text-red-400";
-    return "text-gray-400";
+    return "text-indalpha-muted";
   };
 
   return (
@@ -124,7 +111,7 @@ export const FundamentalAnalysis: React.FC<Props> = ({ symbol }) => {
       {/* Header & Verdict */}
       <div className="flex flex-col md:flex-row gap-6 items-start">
         {/* Composite Score Circle */}
-        <div className="shrink-0 relative w-32 h-32 flex items-center justify-center rounded-full bg-gray-900 border-4 border-gray-800 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+        <div className="shrink-0 relative w-32 h-32 flex items-center justify-center rounded-full bg-indalpha-card border-4 border-indalpha-border shadow-[0_0_20px_rgba(0,0,0,0.5)]">
           <svg className="absolute inset-0 w-full h-full transform -rotate-90">
             <circle cx="60" cy="60" r="56" fill="transparent" stroke="currentColor" strokeWidth="8" className="text-gray-800" />
             <circle cx="60" cy="60" r="56" fill="transparent" stroke="currentColor" strokeWidth="8"
@@ -134,17 +121,17 @@ export const FundamentalAnalysis: React.FC<Props> = ({ symbol }) => {
             />
           </svg>
           <div className="text-center z-10">
-            <div className="text-3xl font-bold text-white">{Math.round(data.scores.composite_score)}</div>
-            <div className="text-[10px] text-gray-400 tracking-wider font-semibold">COMPOSITE</div>
+            <div className="text-3xl font-bold text-indalpha-text">{Math.round(data.scores.composite_score)}</div>
+            <div className="text-[10px] text-indalpha-muted tracking-wider font-semibold">COMPOSITE</div>
           </div>
         </div>
 
         <div className="flex-1 space-y-4">
           <div>
-            <h2 className="text-2xl font-semibold text-white flex items-center gap-2">
-              {data.company_name} <span className="text-gray-500 text-sm font-normal">({data.ticker})</span>
+            <h2 className="text-2xl font-semibold text-indalpha-text flex items-center gap-2">
+              {data.company_name} <span className="text-indalpha-muted text-sm font-normal">({data.ticker})</span>
             </h2>
-            <div className="text-gray-400 text-sm">Sector: {data.sector}</div>
+            <div className="text-indalpha-muted text-sm">Sector: {data.sector}</div>
           </div>
           
           <div className={`inline-flex items-center gap-2 px-4 py-2 rounded border ${getVerdictStyle(data.verdict)}`}>
@@ -161,13 +148,13 @@ export const FundamentalAnalysis: React.FC<Props> = ({ symbol }) => {
         </div>
       </div>
 
-      <p className="text-gray-300 bg-gray-800/50 p-4 rounded-lg border border-gray-700/50 leading-relaxed text-sm">
+      <p className="text-indalpha-text bg-indalpha-card/50 p-4 rounded-lg border border-indalpha-border/50 leading-relaxed text-sm">
         {data.final_rationale}
       </p>
 
       {/* 6 Dimension Sub-Scores */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4 border-b border-gray-800 pb-2">6-Dimension Evaluation</h3>
+        <h3 className="text-sm font-semibold text-indalpha-muted uppercase tracking-wider mb-4 border-b border-indalpha-border pb-2">6-Dimension Evaluation</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <ScoreCard title="Profitability & Return" score={data.scores.profitability_score} max={20} icon={<BarChart3 />} />
           <ScoreCard title="Solvency & Balance Sheet" score={data.scores.solvency_score} max={15} icon={<Scale />} />
@@ -180,8 +167,8 @@ export const FundamentalAnalysis: React.FC<Props> = ({ symbol }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Key Metrics */}
-        <div className="bg-[#1a1e24] border border-gray-800 rounded-lg p-5">
-          <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+        <div className="bg-indalpha-card border border-indalpha-border rounded-lg p-5">
+          <h3 className="text-sm font-semibold text-indalpha-text mb-4 flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-indalpha-green" /> Key Quantitative Metrics
           </h3>
           <div className="grid grid-cols-2 gap-y-4 gap-x-2 text-sm">
@@ -191,36 +178,36 @@ export const FundamentalAnalysis: React.FC<Props> = ({ symbol }) => {
             <MetricItem label="PAT CAGR (3Y)" value={`${data.key_metrics_summary.pat_cagr_3y_pct}%`} good={data.key_metrics_summary.pat_cagr_3y_pct >= 15} />
             <MetricItem label="Debt to Equity" value={data.key_metrics_summary.debt_to_equity} good={data.key_metrics_summary.debt_to_equity <= 0.5} />
             <MetricItem label="Promoter Pledged" value={`${data.key_metrics_summary.promoter_pledge_pct}%`} bad={data.key_metrics_summary.promoter_pledge_pct > 10} />
-            <div className="col-span-2 mt-2 pt-2 border-t border-gray-800">
-              <div className="text-gray-400 text-xs mb-1">PE vs Industry</div>
-              <div className="text-gray-200">{data.key_metrics_summary.pe_vs_industry}</div>
+            <div className="col-span-2 mt-2 pt-2 border-t border-indalpha-border">
+              <div className="text-indalpha-muted text-xs mb-1">PE vs Industry</div>
+              <div className="text-indalpha-text">{data.key_metrics_summary.pe_vs_industry}</div>
             </div>
           </div>
         </div>
 
         {/* Operational Moat */}
-        <div className="bg-[#1a1e24] border border-gray-800 rounded-lg p-5">
-          <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+        <div className="bg-indalpha-card border border-indalpha-border rounded-lg p-5">
+          <h3 className="text-sm font-semibold text-indalpha-text mb-4 flex items-center gap-2">
             <Factory className="w-4 h-4 text-indalpha-green" /> Operational Moat & Risks
           </h3>
           <div className="space-y-4 text-sm">
             <div>
-              <div className="text-gray-400 text-xs mb-1">Integration Structure</div>
-              <div className="text-gray-200">{data.operational_moat_analysis.integration_structure}</div>
+              <div className="text-indalpha-muted text-xs mb-1">Integration Structure</div>
+              <div className="text-indalpha-text">{data.operational_moat_analysis.integration_structure}</div>
             </div>
             <div>
-              <div className="text-gray-400 text-xs mb-1">Technology Advantages</div>
-              <div className="text-gray-200">{data.operational_moat_analysis.technology_advantages}</div>
+              <div className="text-indalpha-muted text-xs mb-1">Technology Advantages</div>
+              <div className="text-indalpha-text">{data.operational_moat_analysis.technology_advantages}</div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <div className="text-gray-400 text-xs mb-1">Raw Material Risk</div>
+                <div className="text-indalpha-muted text-xs mb-1">Raw Material Risk</div>
                 <div className={`font-medium ${getRiskColor(data.operational_moat_analysis.raw_material_risk)}`}>
                   {data.operational_moat_analysis.raw_material_risk}
                 </div>
               </div>
               <div>
-                <div className="text-gray-400 text-xs mb-1">Policy Risk</div>
+                <div className="text-indalpha-muted text-xs mb-1">Policy Risk</div>
                 <div className={`font-medium ${getRiskColor(data.operational_moat_analysis.policy_dependency_risk)}`}>
                   {data.operational_moat_analysis.policy_dependency_risk}
                 </div>
@@ -238,7 +225,7 @@ export const FundamentalAnalysis: React.FC<Props> = ({ symbol }) => {
           </h3>
           <ul className="space-y-2">
             {data.pros.map((pro, i) => (
-              <li key={i} className="text-sm text-gray-300 flex items-start gap-2">
+              <li key={i} className="text-sm text-indalpha-text flex items-start gap-2">
                 <ChevronRight className="w-4 h-4 mt-0.5 text-indalpha-green shrink-0" />
                 <span>{pro}</span>
               </li>
@@ -253,7 +240,7 @@ export const FundamentalAnalysis: React.FC<Props> = ({ symbol }) => {
           </h3>
           <ul className="space-y-2">
             {data.cons_and_risks.map((con, i) => (
-              <li key={i} className="text-sm text-gray-300 flex items-start gap-2">
+              <li key={i} className="text-sm text-indalpha-text flex items-start gap-2">
                 <XCircle className="w-3.5 h-3.5 mt-1 text-red-400 shrink-0" />
                 <span>{con}</span>
               </li>
@@ -272,16 +259,16 @@ const ScoreCard = ({ title, score, max, icon }: { title: string, score: number, 
   else if (percentage < 75) color = "text-yellow-500 bg-yellow-500";
 
   return (
-    <div className="bg-[#13161a] border border-gray-800 rounded p-4 flex items-center gap-4">
-      <div className={`p-2 rounded bg-gray-800/50 ${color.split(' ')[0]}`}>
+    <div className="bg-indalpha-dark border border-indalpha-border rounded p-4 flex items-center gap-4">
+      <div className={`p-2 rounded bg-indalpha-card/50 ${color.split(' ')[0]}`}>
         {React.isValidElement(icon) ? React.cloneElement(icon, { className: 'w-5 h-5' } as any) : icon}
       </div>
       <div className="flex-1">
         <div className="flex justify-between items-end mb-2">
-          <div className="text-xs text-gray-400 font-medium">{title}</div>
-          <div className="text-sm font-bold text-white">{score}<span className="text-gray-500 text-xs font-normal">/{max}</span></div>
+          <div className="text-xs text-indalpha-muted font-medium">{title}</div>
+          <div className="text-sm font-bold text-indalpha-text">{score}<span className="text-indalpha-muted text-xs font-normal">/{max}</span></div>
         </div>
-        <div className="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
+        <div className="h-1.5 w-full bg-indalpha-card rounded-full overflow-hidden">
           <div className={`h-full rounded-full ${color.split(' ')[1]}`} style={{ width: `${percentage}%` }}></div>
         </div>
       </div>
@@ -290,13 +277,13 @@ const ScoreCard = ({ title, score, max, icon }: { title: string, score: number, 
 };
 
 const MetricItem = ({ label, value, good, bad }: { label: string, value: string | number, good?: boolean, bad?: boolean }) => {
-  let colorClass = "text-gray-200";
+  let colorClass = "text-indalpha-text";
   if (good) colorClass = "text-indalpha-green font-medium";
   if (bad) colorClass = "text-red-500 font-medium";
   
   return (
     <div>
-      <div className="text-gray-500 text-[11px] mb-0.5">{label}</div>
+      <div className="text-indalpha-muted text-[11px] mb-0.5">{label}</div>
       <div className={`text-sm ${colorClass}`}>{value}</div>
     </div>
   );

@@ -13,8 +13,8 @@ interface MarketMoversProps {
 export const MarketMovers: React.FC<MarketMoversProps> = ({ data, loading, onDateSelect, selectedDate, tradingDates }) => {
   if (loading || !data) {
     return (
-      <div className="flex w-full overflow-hidden h-14 bg-indalpha-dark border-b border-gray-800 items-center px-4">
-        <div className="w-48 h-6 bg-gray-900/50 rounded animate-pulse"></div>
+      <div className="flex w-full overflow-hidden h-14 bg-indalpha-dark border-b border-indalpha-border items-center px-4">
+        <div className="w-48 h-6 bg-indalpha-card/50 rounded animate-pulse"></div>
       </div>
     );
   }
@@ -24,7 +24,7 @@ export const MarketMovers: React.FC<MarketMoversProps> = ({ data, loading, onDat
   const marqueeItems = [...combinedList, ...combinedList];
 
   return (
-    <div className="relative flex w-full overflow-hidden h-12 bg-[#0a0c10] border-b border-gray-800 items-center">
+    <div className="relative flex w-full overflow-hidden h-12 bg-indalpha-dark border-b border-indalpha-border items-center">
       {/* Label overlay on left */}
       <div className="absolute left-0 top-0 bottom-0 z-10 flex items-center bg-gradient-to-r from-[#0a0c10] via-[#0a0c10] to-transparent pl-4 pr-12">
         <span className="text-xs font-bold text-indalpha-muted uppercase tracking-widest flex items-center gap-2">
@@ -33,7 +33,7 @@ export const MarketMovers: React.FC<MarketMoversProps> = ({ data, loading, onDat
         </span>
         {onDateSelect && tradingDates && (
           <select 
-            className="ml-3 bg-gray-900 border border-gray-800 text-xs text-white rounded px-2 py-1 outline-none"
+            className="ml-3 bg-indalpha-card border border-indalpha-border text-xs text-indalpha-text rounded px-2 py-1 outline-none"
             value={selectedDate || ''}
             onChange={(e) => onDateSelect(e.target.value)}
           >
@@ -52,9 +52,9 @@ export const MarketMovers: React.FC<MarketMoversProps> = ({ data, loading, onDat
           return (
             <div 
               key={`${stock.symbol}-${i}`}
-              className="flex items-center gap-3 px-6 border-r border-gray-800/50 hover:bg-white/5 transition-colors cursor-pointer group"
+              className="flex items-center gap-3 px-6 border-r border-indalpha-border/50 hover:bg-white/5 transition-colors cursor-pointer group"
             >
-              <span className="font-bold text-white/90 text-sm tracking-wide group-hover:text-white">
+              <span className="font-bold text-indalpha-text/90 text-sm tracking-wide group-hover:text-indalpha-text">
                 {stock.symbol.replace('.NS', '')}
               </span>
               <span className={`text-xs font-mono font-medium flex items-center gap-1 ${isGainer ? 'text-indalpha-green' : 'text-indalpha-red'}`}>

@@ -125,13 +125,13 @@ export function GlobalSearch({ onAddStock, onViewChart }: GlobalSearchProps) {
     if (t === 'EQUITY') return { label: 'EQ', color: 'bg-blue-900/30 text-blue-400 border-blue-800/50' };
     if (t === 'ETF') return { label: 'ETF', color: 'bg-purple-900/30 text-purple-400 border-purple-800/50' };
     if (t === 'INDEX') return { label: 'IDX', color: 'bg-yellow-900/30 text-yellow-400 border-yellow-800/50' };
-    return { label: t.slice(0, 3), color: 'bg-gray-800 text-gray-400 border-gray-700' };
+    return { label: t.slice(0, 3), color: 'bg-indalpha-card text-indalpha-muted border-indalpha-border' };
   };
 
   return (
-    <div className="relative w-96 z-50" ref={wrapperRef}>
+    <div className="relative w-48 sm:w-64 md:w-96 z-50" ref={wrapperRef}>
       <div className="relative">
-        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-indalpha-muted" />
         <input 
           ref={inputRef}
           type="text" 
@@ -140,7 +140,7 @@ export function GlobalSearch({ onAddStock, onViewChart }: GlobalSearchProps) {
           onKeyDown={handleKeyDown}
           onFocus={() => { if (results.length > 0) setIsOpen(true); }}
           placeholder="Search stocks..." 
-          className="bg-gray-900 border border-gray-700 rounded-full py-1.5 pl-10 pr-20 text-sm w-full focus:outline-none focus:border-indalpha-green focus:ring-1 focus:ring-indalpha-green text-gray-200 transition-all placeholder:text-gray-500"
+          className="bg-indalpha-card border border-indalpha-border rounded-full py-1.5 pl-10 pr-20 text-sm w-full focus:outline-none focus:border-indalpha-green focus:ring-1 focus:ring-indalpha-green text-indalpha-text transition-all placeholder:text-indalpha-muted"
         />
         {isLoading ? (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -155,7 +155,7 @@ export function GlobalSearch({ onAddStock, onViewChart }: GlobalSearchProps) {
       </div>
 
       {isOpen && results.length > 0 && (
-        <div className="absolute top-full mt-2 w-full bg-gray-900/95 backdrop-blur-md border border-gray-700 rounded-xl shadow-2xl overflow-hidden animate-fade-in">
+        <div className="absolute top-full mt-2 w-full bg-indalpha-card/95 backdrop-blur-md border border-indalpha-border rounded-xl shadow-2xl overflow-hidden animate-fade-in">
           <ul className="max-h-96 overflow-y-auto py-1 custom-scrollbar">
             {results.map((result, index) => {
               const badge = getTypeBadge(result.type);
@@ -164,17 +164,17 @@ export function GlobalSearch({ onAddStock, onViewChart }: GlobalSearchProps) {
                   key={result.symbol}
                   onMouseEnter={() => setSelectedIndex(index)}
                   className={`px-3 py-2.5 cursor-pointer transition-colors group ${
-                    index === selectedIndex ? 'bg-gray-800' : 'hover:bg-gray-800/50'
+                    index === selectedIndex ? 'bg-indalpha-card' : 'hover:bg-indalpha-card/50'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col overflow-hidden" onClick={() => handleViewChart(result)}>
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-100 font-medium text-sm">{result.name}</span>
+                        <span className="text-indalpha-text font-medium text-sm">{result.name}</span>
                         <span className={`text-[9px] px-1.5 py-0.5 rounded-sm font-bold border ${badge.color}`}>{badge.label}</span>
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-gray-500 text-xs font-mono">{result.symbol}</span>
+                        <span className="text-indalpha-muted text-xs font-mono">{result.symbol}</span>
                         <span className={`text-[9px] px-1 rounded-sm font-bold border ${
                           result.exchange === 'NSE' 
                             ? 'bg-blue-900/30 text-blue-400 border-blue-800/50' 
@@ -205,16 +205,16 @@ export function GlobalSearch({ onAddStock, onViewChart }: GlobalSearchProps) {
               );
             })}
           </ul>
-          <div className="px-3 py-2 border-t border-gray-800 flex items-center gap-3 text-[10px] text-gray-600">
-            <span><kbd className="bg-gray-800 px-1 rounded text-gray-500">↑↓</kbd> Navigate</span>
-            <span><kbd className="bg-gray-800 px-1 rounded text-gray-500">Enter</kbd> Add to WL</span>
-            <span><kbd className="bg-gray-800 px-1 rounded text-gray-500">Esc</kbd> Close</span>
+          <div className="px-3 py-2 border-t border-indalpha-border flex items-center gap-3 text-[10px] text-gray-600">
+            <span><kbd className="bg-indalpha-card px-1 rounded text-indalpha-muted">↑↓</kbd> Navigate</span>
+            <span><kbd className="bg-indalpha-card px-1 rounded text-indalpha-muted">Enter</kbd> Add to WL</span>
+            <span><kbd className="bg-indalpha-card px-1 rounded text-indalpha-muted">Esc</kbd> Close</span>
           </div>
         </div>
       )}
       
       {isOpen && !isLoading && query.length >= 2 && results.length === 0 && (
-        <div className="absolute top-full mt-2 w-full bg-gray-900/95 backdrop-blur-md border border-gray-700 rounded-xl shadow-2xl p-4 text-center text-sm text-gray-400 animate-fade-in">
+        <div className="absolute top-full mt-2 w-full bg-indalpha-card/95 backdrop-blur-md border border-indalpha-border rounded-xl shadow-2xl p-4 text-center text-sm text-indalpha-muted animate-fade-in">
           No stocks found matching "{query}"
         </div>
       )}

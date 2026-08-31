@@ -90,14 +90,36 @@ def fetch_fundamentals(sym):
         if market_cap > 0:
             market_cap = market_cap / 10000000
             
+        # Calculate ROE if missing or 0
+        roe_val = info.get('returnOnEquity')
+        if not roe_val:
+            eps = info.get('trailingEps', 0)
+            bv = info.get('bookValue', 0)
+            if eps and bv and bv > 0:
+                roe_val = eps / bv
+            else:
+                roe_val = 0
+
+        # Calculate ROCE approximation
+        roce_val = roe_val # fallback to ROE
+        ebitda = info.get('ebitda', 0)
+        total_debt = info.get('totalDebt', 0)
+        shares = info.get('sharesOutstanding', 0)
+        bv = info.get('bookValue', 0)
+        if ebitda and shares and bv and bv > 0:
+            total_equity = shares * bv
+            capital_employed = total_equity + total_debt
+            if capital_employed > 0:
+                roce_val = ebitda / capital_employed
+
         return {
             "sym": sym,
             "sector": str(info.get('sector', 'Unknown')),
             "market_cap": market_cap,
             "pe": _safe_float(info.get('trailingPE', 0)),
-            "roe": _safe_float(info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else 0),
-            "roce": _safe_float(info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else 0), # Fallback ROE to ROCE
-            "de": _safe_float(info.get('debtToEquity', 0)),
+            "roe": _safe_float(roe_val * 100),
+            "roce": _safe_float(roce_val * 100),
+            "de": _safe_float(info.get('debtToEquity', 0) / 100 if info.get('debtToEquity') else 0),
             "ph": _safe_float(info.get('heldPercentInsiders', 0) * 100 if info.get('heldPercentInsiders') else 0),
             "pp": 0.0, # Not in yf
             "eps": _safe_float(info.get('trailingEps', 0)),

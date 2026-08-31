@@ -34,7 +34,12 @@ npm run dev
 
 ### 3. API Key
 IndAlpha uses Google Gemini for the AI Engine. 
-Open the application in your browser (`http://localhost:5173`), click the **Settings ⚙️** icon in the top right, and paste your Gemini API key. It is stored securely in your browser's local storage.
+To run the AI features, users must configure their own Gemini API Key in the application's Settings Modal. 
+Your key is securely stored in your browser's local storage and passed directly to the AI service.
+
+1. Open the IndAlpha frontend in your browser.
+2. Click the Settings icon.
+3. Paste your Gemini API Key and save.
 
 ## Live Deployment
 For instructions on how to host this application live (e.g., on Vercel and Render), please see [DEPLOYMENT.md](./DEPLOYMENT.md).

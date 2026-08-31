@@ -31,7 +31,7 @@ export const FinancialsView: React.FC<Props> = ({ symbol }) => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64 text-slate-400">
+      <div className="flex justify-center items-center h-64 text-indalpha-muted">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500 mr-3"></div>
         Fetching comprehensive financials...
       </div>
@@ -53,66 +53,66 @@ export const FinancialsView: React.FC<Props> = ({ symbol }) => {
     };
 
     return (
-      <div className="bg-[#1c2236] rounded-xl p-6 border border-[#2d3748] mb-8 shadow-xl">
+      <div className="bg-indalpha-card rounded-xl p-6 border border-indalpha-border mb-8 shadow-xl">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-semibold text-slate-100">{title}</h2>
-          <span className="text-xs text-slate-400">Consolidated Figures in Rs. Crores</span>
+          <h2 className="text-2xl font-semibold text-indalpha-text">{title}</h2>
+          <span className="text-xs text-indalpha-muted">Consolidated Figures in Rs. Crores</span>
         </div>
         
         <div className="overflow-x-auto custom-scrollbar pb-4">
           <table className="w-full text-sm text-right">
             <thead>
-              <tr className="border-b border-[#2d3748] text-slate-400">
-                <th className="text-left py-3 px-4 font-medium sticky left-0 bg-[#1c2236] z-10 w-48">Metric</th>
+              <tr className="border-b border-indalpha-border text-indalpha-muted">
+                <th className="text-left py-3 px-4 font-medium sticky left-0 bg-indalpha-card z-10 w-48">Metric</th>
                 {statements.map((stmt, idx) => (
                   <th key={idx} className="py-3 px-4 font-semibold whitespace-nowrap min-w-[90px]">{stmt.date}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-[#2d3748]">
-              <tr className="hover:bg-[#252d43] transition-colors group">
-                <td className="text-left py-3 px-4 text-slate-300 font-medium sticky left-0 bg-[#1c2236] group-hover:bg-[#252d43] z-10">Sales</td>
+              <tr className="hover:bg-indalpha-card transition-colors group">
+                <td className="text-left py-3 px-4 text-indalpha-text font-medium sticky left-0 bg-indalpha-card group-hover:bg-indalpha-card z-10">Sales</td>
                 {statements.map((stmt, idx) => <td key={idx} className="py-3 px-4">{formatVal(stmt.sales)}</td>)}
               </tr>
-              <tr className="hover:bg-[#252d43] transition-colors group">
-                <td className="text-left py-3 px-4 text-slate-300 font-medium sticky left-0 bg-[#1c2236] group-hover:bg-[#252d43] z-10">Expenses</td>
+              <tr className="hover:bg-indalpha-card transition-colors group">
+                <td className="text-left py-3 px-4 text-indalpha-text font-medium sticky left-0 bg-indalpha-card group-hover:bg-indalpha-card z-10">Expenses</td>
                 {statements.map((stmt, idx) => <td key={idx} className="py-3 px-4">{formatVal(stmt.expenses)}</td>)}
               </tr>
-              <tr className="hover:bg-[#252d43] transition-colors group font-semibold text-white bg-[#252d43]/30">
-                <td className="text-left py-3 px-4 sticky left-0 bg-[#1c2236] group-hover:bg-[#252d43] z-10">Operating Profit</td>
+              <tr className="hover:bg-indalpha-card transition-colors group font-semibold text-indalpha-text bg-indalpha-card/30">
+                <td className="text-left py-3 px-4 sticky left-0 bg-indalpha-card group-hover:bg-indalpha-card z-10">Operating Profit</td>
                 {statements.map((stmt, idx) => <td key={idx} className="py-3 px-4">{formatVal(stmt.operating_profit)}</td>)}
               </tr>
-              <tr className="hover:bg-[#252d43] transition-colors group text-slate-400 text-xs">
-                <td className="text-left py-2 px-4 sticky left-0 bg-[#1c2236] group-hover:bg-[#252d43] z-10">OPM %</td>
+              <tr className="hover:bg-indalpha-card transition-colors group text-indalpha-muted text-xs">
+                <td className="text-left py-2 px-4 sticky left-0 bg-indalpha-card group-hover:bg-indalpha-card z-10">OPM %</td>
                 {statements.map((stmt, idx) => <td key={idx} className="py-2 px-4">{stmt.opm_pct.toFixed(0)}%</td>)}
               </tr>
-              <tr className="hover:bg-[#252d43] transition-colors group">
-                <td className="text-left py-3 px-4 text-slate-300 font-medium sticky left-0 bg-[#1c2236] group-hover:bg-[#252d43] z-10">Other Income</td>
+              <tr className="hover:bg-indalpha-card transition-colors group">
+                <td className="text-left py-3 px-4 text-indalpha-text font-medium sticky left-0 bg-indalpha-card group-hover:bg-indalpha-card z-10">Other Income</td>
                 {statements.map((stmt, idx) => <td key={idx} className="py-3 px-4">{formatVal(stmt.other_income)}</td>)}
               </tr>
-              <tr className="hover:bg-[#252d43] transition-colors group">
-                <td className="text-left py-3 px-4 text-slate-300 font-medium sticky left-0 bg-[#1c2236] group-hover:bg-[#252d43] z-10">Interest</td>
+              <tr className="hover:bg-indalpha-card transition-colors group">
+                <td className="text-left py-3 px-4 text-indalpha-text font-medium sticky left-0 bg-indalpha-card group-hover:bg-indalpha-card z-10">Interest</td>
                 {statements.map((stmt, idx) => <td key={idx} className="py-3 px-4">{formatVal(stmt.interest)}</td>)}
               </tr>
-              <tr className="hover:bg-[#252d43] transition-colors group">
-                <td className="text-left py-3 px-4 text-slate-300 font-medium sticky left-0 bg-[#1c2236] group-hover:bg-[#252d43] z-10">Depreciation</td>
+              <tr className="hover:bg-indalpha-card transition-colors group">
+                <td className="text-left py-3 px-4 text-indalpha-text font-medium sticky left-0 bg-indalpha-card group-hover:bg-indalpha-card z-10">Depreciation</td>
                 {statements.map((stmt, idx) => <td key={idx} className="py-3 px-4">{formatVal(stmt.depreciation)}</td>)}
               </tr>
-              <tr className="hover:bg-[#252d43] transition-colors group font-semibold text-white bg-[#252d43]/30">
-                <td className="text-left py-3 px-4 sticky left-0 bg-[#1c2236] group-hover:bg-[#252d43] z-10">Profit before tax</td>
+              <tr className="hover:bg-indalpha-card transition-colors group font-semibold text-indalpha-text bg-indalpha-card/30">
+                <td className="text-left py-3 px-4 sticky left-0 bg-indalpha-card group-hover:bg-indalpha-card z-10">Profit before tax</td>
                 {statements.map((stmt, idx) => <td key={idx} className="py-3 px-4">{formatVal(stmt.profit_before_tax)}</td>)}
               </tr>
-              <tr className="hover:bg-[#252d43] transition-colors group text-slate-400 text-xs">
-                <td className="text-left py-2 px-4 sticky left-0 bg-[#1c2236] group-hover:bg-[#252d43] z-10">Tax %</td>
+              <tr className="hover:bg-indalpha-card transition-colors group text-indalpha-muted text-xs">
+                <td className="text-left py-2 px-4 sticky left-0 bg-indalpha-card group-hover:bg-indalpha-card z-10">Tax %</td>
                 {statements.map((stmt, idx) => <td key={idx} className="py-2 px-4">{stmt.tax_pct.toFixed(0)}%</td>)}
               </tr>
-              <tr className="hover:bg-[#252d43] transition-colors group font-bold text-emerald-400 bg-emerald-900/10">
-                <td className="text-left py-3 px-4 sticky left-0 bg-[#1c2236] group-hover:bg-emerald-900/20 z-10 border-t border-emerald-900/30">Net Profit</td>
+              <tr className="hover:bg-indalpha-card transition-colors group font-bold text-emerald-400 bg-emerald-900/10">
+                <td className="text-left py-3 px-4 sticky left-0 bg-indalpha-card group-hover:bg-emerald-900/20 z-10 border-t border-emerald-900/30">Net Profit</td>
                 {statements.map((stmt, idx) => <td key={idx} className="py-3 px-4 border-t border-emerald-900/30">{formatVal(stmt.net_profit)}</td>)}
               </tr>
-              <tr className="hover:bg-[#252d43] transition-colors group text-indigo-300 font-medium">
-                <td className="text-left py-4 px-4 sticky left-0 bg-[#1c2236] group-hover:bg-[#252d43] z-10 border-t border-[#2d3748]">EPS in Rs</td>
-                {statements.map((stmt, idx) => <td key={idx} className="py-4 px-4 border-t border-[#2d3748]">{stmt.eps.toFixed(2)}</td>)}
+              <tr className="hover:bg-indalpha-card transition-colors group text-indigo-300 font-medium">
+                <td className="text-left py-4 px-4 sticky left-0 bg-indalpha-card group-hover:bg-indalpha-card z-10 border-t border-indalpha-border">EPS in Rs</td>
+                {statements.map((stmt, idx) => <td key={idx} className="py-4 px-4 border-t border-indalpha-border">{stmt.eps.toFixed(2)}</td>)}
               </tr>
             </tbody>
           </table>
@@ -127,7 +127,7 @@ export const FinancialsView: React.FC<Props> = ({ symbol }) => {
       <FinancialTable title="Profit & Loss" data={data.annual} />
       
       {(!data.quarterly?.length && !data.annual?.length) && (
-        <div className="text-center p-8 text-slate-400 bg-[#1c2236] rounded-xl border border-[#2d3748]">
+        <div className="text-center p-8 text-indalpha-muted bg-indalpha-card rounded-xl border border-indalpha-border">
           Detailed financial history is not available for this stock.
         </div>
       )}

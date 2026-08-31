@@ -5,4 +5,7 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   base: './', // Ensures relative paths for assets on GitHub Pages
+  optimizeDeps: {
+    exclude: ['@mlc-ai/web-llm']
+  }
 })

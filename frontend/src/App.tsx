@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from './api';
-import { Save, Bell, RefreshCw, Settings } from 'lucide-react';
+import { Save, Bell, RefreshCw, Settings, Menu, List, X } from 'lucide-react';
 import { SettingsModal } from './components/SettingsModal';
 import { ScreenerTable } from './components/ScreenerTable';
 import { FilterSidebar } from './components/FilterSidebar';
@@ -11,6 +11,8 @@ import { StockDetailPanel } from './components/StockDetailPanel';
 import { QueryBar } from './components/QueryBar';
 import { MarketMovers } from './components/MarketMovers';
 import type { StockData, IndexData, ScreenerFilters, Watchlist, SelectedStock, MarketMoversData } from './types';
+import { AiChatWidget } from './components/AiChatWidget';
+import { LockScreen } from './components/LockScreen';
 
 function App() {
   const [stocks, setStocks] = useState<StockData[]>([]);
@@ -22,6 +24,9 @@ function App() {
   const [watchlists, setWatchlists] = useState<Watchlist[]>([]);
   const [activeWatchlistId, setActiveWatchlistId] = useState<number | null>(null);
   
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  const [showMobileWatchlist, setShowMobileWatchlist] = useState(false);
+  
   const [moversData, setMoversData] = useState<MarketMoversData | null>(null);
   const [moversLoading, setMoversLoading] = useState<boolean>(true);
   const [tradingDates, setTradingDates] = useState<string[]>([]);
@@ -29,6 +34,10 @@ function App() {
   
   // Stock detail panel state
   const [selectedStock, setSelectedStock] = useState<SelectedStock | null>(null);
+
+  const [isUnlocked, setIsUnlocked] = useState<boolean>(() => {
+    return sessionStorage.getItem('app_unlocked') === 'true';
+  });
 
   const API_URL = '';
 
@@ -210,49 +219,77 @@ function App() {
     setStocks(results);
   };
 
+  if (!isUnlocked) {
+    return (
+      <LockScreen onUnlock={() => {
+        sessionStorage.setItem('app_unlocked', 'true');
+        setIsUnlocked(true);
+      }} />
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-indalpha-dark text-indalpha-text">
       {/* Top Navigation */}
-      <header className="h-14 bg-indalpha-dark border-b border-gray-800 flex items-center justify-between px-6 shrink-0">
-        <div className="flex items-center gap-6">
-          <div className="font-bold text-lg flex items-center gap-2">
+      <header className="h-14 bg-indalpha-dark border-b border-indalpha-border flex items-center justify-between px-4 md:px-6 shrink-0 relative z-30">
+        <div className="flex items-center gap-3 md:gap-6">
+          <button 
+            className="md:hidden text-indalpha-muted hover:text-indalpha-text"
+            onClick={() => setShowMobileSidebar(!showMobileSidebar)}
+          >
+            {showMobileSidebar ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+          
+          <div className="font-bold text-lg flex items-center gap-1 md:gap-2">
             <span className="text-indalpha-green text-2xl font-mono">α</span>
-            <span className="text-white">IndAlpha</span>
-            <span className="text-[9px] bg-gray-800 px-1.5 py-0.5 rounded text-indalpha-muted border border-gray-700 font-semibold tracking-wider">PRO</span>
+            <span className="text-indalpha-text hidden sm:inline">IndAlpha</span>
+            <span className="text-[9px] bg-indalpha-card px-1.5 py-0.5 rounded text-indalpha-muted border border-indalpha-border font-semibold tracking-wider">PRO</span>
           </div>
-          <GlobalSearch onAddStock={handleAddStock} onViewChart={handleViewChart} />
+          
+          <div className="hidden md:block">
+            <GlobalSearch onAddStock={handleAddStock} onViewChart={handleViewChart} />
+          </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="md:hidden">
+            <GlobalSearch onAddStock={handleAddStock} onViewChart={handleViewChart} />
+          </div>
           <button 
             onClick={syncMarketData}
             disabled={syncing}
-            className="flex items-center gap-2 border border-gray-700 text-gray-300 px-3 py-1.5 rounded-full text-xs font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
+            className="hidden sm:flex items-center gap-2 border border-indalpha-border text-indalpha-muted px-3 py-1.5 rounded-full text-xs font-medium hover:bg-indalpha-card transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin text-indalpha-green' : ''}`} /> 
             {syncing ? 'Syncing...' : 'Sync'}
           </button>
-          <button className="flex items-center gap-1.5 border border-indalpha-green/50 text-indalpha-green px-3 py-1.5 rounded-full text-xs font-medium hover:bg-indalpha-green hover:text-black transition-colors">
+          <button className="hidden sm:flex items-center gap-1.5 border border-indalpha-green/50 text-indalpha-green px-3 py-1.5 rounded-full text-xs font-medium hover:bg-indalpha-green hover:text-black transition-colors">
             <Save className="w-3.5 h-3.5" /> Save
           </button>
-          <button onClick={() => setIsSettingsOpen(true)} className="text-gray-500 hover:text-white transition-colors">
-            <Settings className="w-4 h-4" />
+          <button onClick={() => setIsSettingsOpen(true)} className="text-indalpha-muted hover:text-indalpha-text transition-colors">
+            <Settings className="w-4 h-4 md:w-5 md:h-5" />
           </button>
-          <button className="text-gray-500 hover:text-white transition-colors">
-            <Bell className="w-4 h-4" />
+          <button 
+            className="md:hidden text-indalpha-muted hover:text-indalpha-text transition-colors ml-1"
+            onClick={() => setShowMobileWatchlist(!showMobileWatchlist)}
+          >
+            {showMobileWatchlist ? <X className="w-5 h-5" /> : <List className="w-5 h-5" />}
+          </button>
+          <button className="hidden md:block text-indalpha-muted hover:text-indalpha-text transition-colors">
+            <Bell className="w-5 h-5" />
           </button>
         </div>
       </header>
 
       {/* Live Market Bar */}
-      <div className="h-7 bg-black border-b border-gray-800 flex items-center px-6 text-[11px] shrink-0 overflow-x-auto whitespace-nowrap scrollbar-hide">
+      <div className="h-7 bg-black border-b border-indalpha-border flex items-center px-6 text-[11px] shrink-0 overflow-x-auto whitespace-nowrap scrollbar-hide">
         <div className="flex items-center gap-2 text-indalpha-green mr-6 font-semibold">
           <div className="w-1.5 h-1.5 rounded-full bg-indalpha-green animate-pulse"></div>
           LIVE
         </div>
         {indices.map(idx => (
           <div key={idx.name} className="flex items-center gap-1.5 mr-6">
-            <span className="text-gray-500">{idx.name}</span>
-            <span className="font-mono text-white">{idx.value.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+            <span className="text-indalpha-muted">{idx.name}</span>
+            <span className="font-mono text-indalpha-text">{idx.value.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
             <span className={`font-mono ${idx.change >= 0 ? 'text-indalpha-green' : 'text-indalpha-red'}`}>
               {idx.change >= 0 ? '+' : ''}{idx.change}%
             </span>
@@ -261,16 +298,30 @@ function App() {
       </div>
 
       {/* Main Content */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
         {/* Left Sidebar */}
-        <div className="flex flex-col border-r border-gray-800 h-full shrink-0">
+        <div className={`
+          absolute md:relative z-20 h-full bg-indalpha-dark border-r border-indalpha-border transition-transform duration-300 w-72 md:w-auto
+          ${showMobileSidebar ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}>
           <FilterSidebar 
             filters={filters} 
             setFilters={setFilters} 
-            onApply={fetchStocks} 
+            onApply={() => {
+              fetchStocks();
+              setShowMobileSidebar(false);
+            }} 
             tradingDates={tradingDates}
           />
         </div>
+
+        {/* Overlay for mobile sidebar */}
+        {showMobileSidebar && (
+          <div 
+            className="absolute inset-0 bg-black/50 z-10 md:hidden"
+            onClick={() => setShowMobileSidebar(false)}
+          />
+        )}
 
         {/* Center Main */}
         <div className="flex-1 flex flex-col overflow-hidden">
@@ -289,14 +340,14 @@ function App() {
           
           <div className="flex-1 p-4 pt-4 overflow-y-auto custom-scrollbar">
             <div className="flex justify-between items-center mb-4">
-              <h1 className="text-lg font-semibold text-white">
+              <h1 className="text-lg font-semibold text-indalpha-text">
                 Screener Output 
                 <span className="text-xs font-normal text-indalpha-green ml-2 border border-indalpha-green/30 bg-indalpha-green/10 px-2 py-0.5 rounded">
                   {stocks.length} stocks
                 </span>
               </h1>
               <div className="flex gap-2">
-                <button className="text-[11px] text-indalpha-muted hover:text-white border border-gray-700 rounded px-2.5 py-1 flex items-center gap-1.5 hover:bg-gray-800 transition-colors">
+                <button className="text-[11px] text-indalpha-muted hover:text-indalpha-text border border-indalpha-border rounded px-2.5 py-1 flex items-center gap-1.5 hover:bg-indalpha-card transition-colors">
                   Export CSV
                 </button>
               </div>
@@ -307,15 +358,31 @@ function App() {
         </div>
         
         {/* Right Sidebar - Watchlists */}
-        <WatchlistSidebar 
-          watchlists={watchlists}
-          activeWatchlistId={activeWatchlistId}
-          setActiveWatchlistId={setActiveWatchlistId}
-          onRemoveStock={handleRemoveStock}
-          onCreateWatchlist={handleCreateWatchlist}
-          onDeleteWatchlist={handleDeleteWatchlist}
-          onSelectStock={handleViewChart}
-        />
+        <div className={`
+          absolute md:relative right-0 z-20 h-full bg-indalpha-dark border-l border-indalpha-border transition-transform duration-300 w-80 md:w-auto
+          ${showMobileWatchlist ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}
+        `}>
+          <WatchlistSidebar 
+            watchlists={watchlists}
+            activeWatchlistId={activeWatchlistId}
+            setActiveWatchlistId={setActiveWatchlistId}
+            onRemoveStock={handleRemoveStock}
+            onCreateWatchlist={handleCreateWatchlist}
+            onDeleteWatchlist={handleDeleteWatchlist}
+            onSelectStock={(stock) => {
+              handleViewChart(stock);
+              setShowMobileWatchlist(false);
+            }}
+          />
+        </div>
+        
+        {/* Overlay for mobile watchlist */}
+        {showMobileWatchlist && (
+          <div 
+            className="absolute inset-0 bg-black/50 z-10 md:hidden"
+            onClick={() => setShowMobileWatchlist(false)}
+          />
+        )}
       </div>
 
       {/* Stock Detail Panel (overlay) */}
@@ -324,6 +391,7 @@ function App() {
       )}
 
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <AiChatWidget />
     </div>
   );
 }
