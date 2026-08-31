@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageSquare, X, Bot, User, Send, Loader2 } from 'lucide-react';
-import axios from 'axios';
+import api from '../api';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -48,7 +48,7 @@ export const AiChatWidget: React.FC = () => {
         return;
       }
 
-      const response = await axios.post('http://localhost:8000/api/chat', {
+      const response = await api.post('/chat', {
         messages: newMessages.map(msg => ({ role: msg.role, content: msg.content }))
       }, {
         headers: {

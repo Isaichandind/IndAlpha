@@ -22,7 +22,10 @@ def _safe_float(val, default=0.0):
     except:
         return default
 
-def get_all_equities():
+def get_all_equities(symbols_list=None):
+    if symbols_list:
+        return [(s, s.split('.')[0]) for s in symbols_list]
+        
     print("Fetching active equities from NSE & BSE...")
     symbols_and_names = []
     nse_bases = set()
@@ -138,9 +141,11 @@ def calculate_rsi(series, period=14):
     rsi = 100 - (100 / (1 + rs))
     return rsi
 
-def seed_db():
+def seed_db(symbols_list=None):
     print("=" * 60)
     print("  IndAlpha PRO - Full Market Seeder")
+    if symbols_list:
+        print(f"  [FAST BOOT MODE] Seeding {len(symbols_list)} stocks")
     print("=" * 60)
     
     # Do not drop tables to preserve old data
@@ -148,7 +153,7 @@ def seed_db():
     db = SessionLocal()
     
     print("Getting latest stock symbols...")
-    all_equities = get_all_equities()
+    all_equities = get_all_equities(symbols_list)
     
     # We will process in batches of 500
     batch_size = 500

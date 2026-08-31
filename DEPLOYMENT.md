@@ -11,7 +11,13 @@ To host IndAlpha completely live and for free, we recommend splitting the deploy
 ## 1. Backend Deployment (Render.com)
 
 Render provides free hosting for Python web services. 
-*Note: Render's free tier uses an ephemeral filesystem. This means the SQLite database will reset to its initial state every time the server sleeps or restarts. For a public demo, this is usually fine, but watchlists will not persist permanently unless you upgrade to a persistent disk or PostgreSQL.*
+*Note: Render's free tier uses an ephemeral filesystem. This means the SQLite database will reset to its initial state every time the server sleeps or restarts. The application includes a "Fast Boot Seeder" that will automatically populate the top 50 stocks when it detects an empty database on startup.*
+
+**For Professional/Persistent Usage:**
+To prevent your watchlists and custom data from wiping on sleep, you must connect a persistent database:
+1. Create a free PostgreSQL database on Render (or use Supabase/Neon).
+2. Add the `DATABASE_URL` environment variable to your Web Service pointing to your new PostgreSQL instance.
+3. The app will automatically create the tables and use the persistent database instead of SQLite.
 
 1. Go to [Render.com](https://render.com/) and sign in with GitHub.
 2. Click **New +** and select **Web Service**.
@@ -27,20 +33,54 @@ Render provides free hosting for Python web services.
 
 ---
 
-## 2. Frontend Deployment (Vercel)
+## 2. Frontend Deployment (GitHub Pages or Vercel)
 
-Vercel is the easiest and most performant way to host React/Vite frontends for free.
-
+### Option A: Vercel (Recommended, Easiest)
 1. Go to [Vercel.com](https://vercel.com/) and sign in with GitHub.
-2. Click **Add New** -> **Project**.
-3. Import your GitHub repository.
-4. In the configuration:
-   - **Framework Preset**: Vercel should auto-detect `Vite`.
-   - **Root Directory**: Select `frontend` (Click Edit to change the root).
+2. Click **Add New** -> **Project**, import your repository.
+3. **Framework Preset**: Vercel should auto-detect `Vite`.
+4. **Root Directory**: Select `frontend` (Click Edit to change the root).
 5. Open the **Environment Variables** section and add:
    - Name: `VITE_API_URL`
-   - Value: `https://your-backend-url.onrender.com/api` *(Replace with the URL you copied from Render in Step 1!)*
+   - Value: `https://your-backend-url.onrender.com/api` *(Replace with your URL)*
 6. Click **Deploy**.
+
+### Option B: GitHub Pages (Requires GitHub Actions)
+GitHub Pages only hosts static files, so we must inject the API URL during the build process using GitHub Actions.
+
+1. In your GitHub repository, go to **Settings** > **Secrets and variables** > **Actions**.
+2. Under the **Variables** tab, add a new Repository Variable:
+   - Name: `VITE_API_URL`
+   - Value: `https://your-backend-url.onrender.com/api`
+3. Create a GitHub Actions workflow file in your repo: `.github/workflows/deploy.yml`:
+
+```yaml
+name: Deploy to GitHub Pages
+on:
+  push:
+    branches: [ main ]
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Install and Build
+        working-directory: ./frontend
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+        run: |
+          npm install
+          npm run build
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./frontend/dist
+```
+4. Push this file to `main`. GitHub Actions will automatically build and deploy your Vite app with the correct backend URL injected!
 
 ---
 
