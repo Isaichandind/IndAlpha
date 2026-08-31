@@ -9,6 +9,7 @@ interface SettingsModalProps {
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [model, setModel] = useState('gemini-3.1-pro-preview');
   const [apiKey, setApiKey] = useState('');
+  const [backendUrl, setBackendUrl] = useState('');
   const [theme, setTheme] = useState('oled');
   const [isSaved, setIsSaved] = useState(false);
 
@@ -21,6 +22,10 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       const savedKey = localStorage.getItem('gemini_api_key');
       if (savedKey) {
         setApiKey(savedKey);
+      }
+      const savedBackend = localStorage.getItem('backend_url');
+      if (savedBackend) {
+        setBackendUrl(savedBackend);
       }
       const savedTheme = localStorage.getItem('app_theme');
       if (savedTheme) {
@@ -36,6 +41,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       localStorage.setItem('gemini_api_key', apiKey.trim());
     } else {
       localStorage.removeItem('gemini_api_key');
+    }
+    if (backendUrl.trim()) {
+      localStorage.setItem('backend_url', backendUrl.trim());
+    } else {
+      localStorage.removeItem('backend_url');
     }
     localStorage.setItem('app_theme', theme);
     setIsSaved(true);
@@ -99,6 +109,25 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 value={apiKey}
                 onChange={(e) => { setApiKey(e.target.value); setIsSaved(false); }}
                 placeholder="AIzaSy..."
+                className="w-full bg-indalpha-dark border border-indalpha-border rounded-lg px-4 py-2.5 text-indalpha-text focus:outline-none focus:border-indalpha-green focus:ring-1 focus:ring-indalpha-green text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-indalpha-text flex items-center gap-2">
+              Backend API URL
+              <ExternalLink className="w-4 h-4 text-emerald-500" />
+            </label>
+            <p className="text-xs text-indalpha-muted leading-relaxed">
+              If your app is deployed to GitHub Pages without a backend, paste your deployed Render/Vercel URL here to connect it. (e.g., https://indalpha.onrender.com/api)
+            </p>
+            <div className="relative">
+              <input
+                type="url"
+                value={backendUrl}
+                onChange={(e) => { setBackendUrl(e.target.value); setIsSaved(false); }}
+                placeholder="https://your-backend-url.onrender.com/api"
                 className="w-full bg-indalpha-dark border border-indalpha-border rounded-lg px-4 py-2.5 text-indalpha-text focus:outline-none focus:border-indalpha-green focus:ring-1 focus:ring-indalpha-green text-sm"
               />
             </div>
