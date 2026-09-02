@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, X, Github, AlertCircle } from 'lucide-react';
+import { Mail, Lock, X, AlertCircle } from 'lucide-react';
 import { authClient } from '../auth';
 
 interface LoginModalProps {
