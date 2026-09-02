@@ -17,7 +17,7 @@ import { LockScreen } from './components/LockScreen';
 import { LoginModal } from './components/LoginModal';
 import { UserProfileModal } from './components/UserProfileModal';
 import { auth } from './firebase';
-import { onAuthStateChanged, type User, signOut } from 'firebase/auth';
+import { onAuthStateChanged, type User } from 'firebase/auth';
 
 function App() {
   const [sessionUser, setSessionUser] = useState<User | null>(null);

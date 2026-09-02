@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, User as UserIcon, LogOut, Loader2, Save } from 'lucide-react';
 import { auth } from '../firebase';
-import { updateProfile, signOut, User } from 'firebase/auth';
+import { updateProfile, signOut, type User } from 'firebase/auth';
 
 interface UserProfileModalProps {
   isOpen: boolean;
