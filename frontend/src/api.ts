@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { authClient } from './auth';
+import { auth } from './firebase';
 
 export const api = axios.create();
 
@@ -17,11 +17,12 @@ api.interceptors.request.use(async (config) => {
   // Ensure no trailing slash
   config.baseURL = baseUrl.replace(/\/$/, '');
 
-  // Inject Auth Token
+  // Inject Firebase Auth Token
   try {
-    const { data } = await authClient.getSession();
-    if (data?.session?.token) {
-      config.headers.Authorization = `Bearer ${data.session.token}`;
+    const user = auth.currentUser;
+    if (user) {
+      const token = await user.getIdToken();
+      config.headers.Authorization = `Bearer ${token}`;
     }
   } catch (e) {
     // silently fail if not authenticated

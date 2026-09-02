@@ -15,10 +15,12 @@ import { AiChatWidget } from './components/AiChatWidget';
 import { LockScreen } from './components/LockScreen';
 
 import { LoginModal } from './components/LoginModal';
-import { authClient } from './auth';
+import { auth } from './firebase';
+import { onAuthStateChanged, User, signOut } from 'firebase/auth';
 
 function App() {
-  const { data: session, isPending: sessionLoading } = authClient.useSession();
+  const [sessionUser, setSessionUser] = useState<User | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   const [stocks, setStocks] = useState<StockData[]>([]);
@@ -48,24 +50,33 @@ function App() {
   const API_URL = '';
 
   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setSessionUser(user);
+      setSessionLoading(false);
+    });
+
     fetchIndices();
     fetchTradingDates();
     fetchMovers();
 
     const handleOpenSettings = () => setIsSettingsOpen(true);
     document.addEventListener('open-settings', handleOpenSettings);
-    return () => document.removeEventListener('open-settings', handleOpenSettings);
+    
+    return () => {
+      document.removeEventListener('open-settings', handleOpenSettings);
+      unsubscribe();
+    };
   }, []);
 
   // Fetch watchlists when session changes
   useEffect(() => {
-    if (session?.user) {
+    if (sessionUser) {
       fetchWatchlists();
     } else {
       setWatchlists([]);
       setActiveWatchlistId(null);
     }
-  }, [session?.user]);
+  }, [sessionUser]);
 
   useEffect(() => {
     fetchStocks();
@@ -133,7 +144,7 @@ function App() {
   };
 
   const handleAddStock = async (stock: SearchResult) => {
-    if (!session?.user) {
+    if (!sessionUser) {
       setIsLoginModalOpen(true);
       return;
     }
@@ -297,13 +308,13 @@ function App() {
           {/* Auth Button */}
           {sessionLoading ? (
             <div className="w-8 h-8 rounded-full bg-white/5 animate-pulse"></div>
-          ) : session?.user ? (
+          ) : sessionUser ? (
             <button 
-              onClick={async () => await authClient.signOut()}
+              onClick={async () => await signOut(auth)}
               className="flex items-center justify-center w-8 h-8 text-sm font-semibold text-white transition-colors bg-blue-600 rounded-full hover:bg-blue-500"
               title="Sign out"
             >
-              {session.user.name?.[0]?.toUpperCase() || session.user.email?.[0]?.toUpperCase() || 'U'}
+              {sessionUser.phoneNumber?.[0] || 'U'}
             </button>
           ) : (
             <button 

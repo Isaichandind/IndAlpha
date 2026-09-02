@@ -7,15 +7,16 @@ from jose import jwt, JWTError
 
 security = HTTPBearer(auto_error=False)
 
-JWKS_URL = os.getenv("NEON_AUTH_JWKS_URL")
-ISSUER = os.getenv("NEON_AUTH_BASE_URL")
+FIREBASE_PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID")
+JWKS_URL = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
+ISSUER = f"https://securetoken.google.com/{FIREBASE_PROJECT_ID}" if FIREBASE_PROJECT_ID else None
 
 # Cache JWKS
 jwks_cache = None
 
 def get_jwks():
     global jwks_cache
-    if not jwks_cache and JWKS_URL:
+    if not jwks_cache:
         try:
             with urllib.request.urlopen(JWKS_URL) as response:
                 jwks_cache = json.loads(response.read().decode("utf-8"))
@@ -25,8 +26,8 @@ def get_jwks():
     return jwks_cache
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    # If no NEON_AUTH_JWKS_URL is provided, bypass auth for local development
-    if not JWKS_URL:
+    # If no FIREBASE_PROJECT_ID is provided, bypass auth for local development
+    if not FIREBASE_PROJECT_ID:
         return {"sub": "anonymous"}
         
     if credentials is None:
@@ -60,8 +61,8 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
                 token,
                 rsa_key,
                 algorithms=["RS256"],
+                audience=FIREBASE_PROJECT_ID,
                 issuer=ISSUER,
-                options={"verify_aud": False} 
             )
             return payload
         else:
@@ -70,6 +71,6 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise HTTPException(status_code=401, detail=f"Token validation failed: {str(e)}")
 
 async def require_auth(user: dict = Depends(get_current_user)):
-    if user.get("sub") == "anonymous" and JWKS_URL:
+    if user.get("sub") == "anonymous" and FIREBASE_PROJECT_ID:
         raise HTTPException(status_code=401, detail="Strict authentication required for this route.")
     return user
