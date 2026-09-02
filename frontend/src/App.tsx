@@ -15,6 +15,7 @@ import { AiChatWidget } from './components/AiChatWidget';
 import { LockScreen } from './components/LockScreen';
 
 import { LoginModal } from './components/LoginModal';
+import { UserProfileModal } from './components/UserProfileModal';
 import { auth } from './firebase';
 import { onAuthStateChanged, type User, signOut } from 'firebase/auth';
 
@@ -22,6 +23,7 @@ function App() {
   const [sessionUser, setSessionUser] = useState<User | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const [stocks, setStocks] = useState<StockData[]>([]);
   const [indices, setIndices] = useState<IndexData[]>([]);
@@ -310,11 +312,11 @@ function App() {
             <div className="w-8 h-8 rounded-full bg-white/5 animate-pulse"></div>
           ) : sessionUser ? (
             <button 
-              onClick={async () => await signOut(auth)}
+              onClick={() => setIsProfileModalOpen(true)}
               className="flex items-center justify-center w-8 h-8 text-sm font-semibold text-white transition-colors bg-blue-600 rounded-full hover:bg-blue-500"
-              title="Sign out"
+              title="Profile"
             >
-              {sessionUser.phoneNumber?.[0] || 'U'}
+              {sessionUser.displayName?.[0]?.toUpperCase() || sessionUser.email?.[0]?.toUpperCase() || sessionUser.phoneNumber?.[0] || 'U'}
             </button>
           ) : (
             <button 
@@ -333,6 +335,7 @@ function App() {
 
       {/* Modals */}
       <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
+      <UserProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} user={sessionUser} />
 
       {/* Live Market Bar */}
       <div className="h-7 bg-black border-b border-indalpha-border flex items-center px-6 text-[11px] shrink-0 overflow-x-auto whitespace-nowrap scrollbar-hide">

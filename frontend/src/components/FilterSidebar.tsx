@@ -58,6 +58,20 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ filters, setFilter
           </select>
         </div>
         <div className="flex flex-col gap-1.5">
+          <label className="text-sm text-indalpha-text">Category</label>
+          <select 
+            name="market_cap_category" 
+            value={filters.market_cap_category || ''} 
+            onChange={(e) => setFilters(prev => ({ ...prev, market_cap_category: e.target.value === '' ? undefined : e.target.value }))}
+            className="w-full bg-indalpha-card border border-indalpha-border rounded py-1.5 px-2 text-sm text-indalpha-text focus:outline-none focus:border-indalpha-green"
+          >
+            <option value="">All Categories</option>
+            <option value="Large Cap">Large Cap (&gt;20,000 Cr)</option>
+            <option value="Mid Cap">Mid Cap (5,000 - 20,000 Cr)</option>
+            <option value="Small Cap">Small Cap (&lt;5,000 Cr)</option>
+          </select>
+        </div>
+        <div className="flex flex-col gap-1.5">
           <label className="text-sm text-indalpha-text">Search</label>
           <input 
             type="text" 

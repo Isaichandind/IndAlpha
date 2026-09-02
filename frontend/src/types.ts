@@ -43,6 +43,7 @@ export interface ScreenerFilters {
   performance_date?: string;
   min_change_pct?: number;
   max_change_pct?: number;
+  market_cap_category?: string;
 }
 
 export interface WatchlistItem {

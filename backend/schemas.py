@@ -89,6 +89,7 @@ class ScreenerFilter(BaseModel):
     performance_date: Optional[str] = None # YYYY-MM-DD
     min_change_pct: Optional[float] = None
     max_change_pct: Optional[float] = None
+    market_cap_category: Optional[str] = None
 
 class WatchlistItemBase(BaseModel):
     symbol: str

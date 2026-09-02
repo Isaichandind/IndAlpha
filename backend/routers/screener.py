@@ -58,6 +58,14 @@ def filter_stocks(filters: schemas.ScreenerFilter, db: Session = Depends(get_db)
 
     if filters.sector:
         query = query.filter(models.Stock.sector.ilike(f"%{filters.sector}%"))
+        
+    if filters.market_cap_category:
+        if filters.market_cap_category == "Large Cap":
+            query = query.filter(models.Stock.market_cap > 20000)
+        elif filters.market_cap_category == "Mid Cap":
+            query = query.filter(models.Stock.market_cap.between(5000, 20000))
+        elif filters.market_cap_category == "Small Cap":
+            query = query.filter(models.Stock.market_cap < 5000)
     
     if filters.search_text:
         query = query.filter(
@@ -142,12 +150,13 @@ def sync_market_data(db: Session = Depends(get_db)):
     if not stocks:
         return {"status": "success", "message": "No stocks to sync"}
         
-    tickers_str = " ".join([f"{stock.ticker}.NS" for stock in stocks])
+    # Use stock.ticker directly since seed.py already appends .NS or .BO
+    tickers_str = " ".join([stock.ticker for stock in stocks])
     try:
         tickers = yf.Tickers(tickers_str)
         for stock in stocks:
             try:
-                yf_ticker = f"{stock.ticker}.NS"
+                yf_ticker = stock.ticker
                 info = tickers.tickers[yf_ticker].fast_info
                 
                 # Update LTP and Market Cap (market cap from yf is in absolute INR, convert to Cr if needed, 
@@ -157,8 +166,27 @@ def sync_market_data(db: Session = Depends(get_db)):
                 if prev_close > 0:
                     stock.change_pct = round(((stock.ltp - prev_close) / prev_close) * 100, 2)
                 
-                # Example: calculate basic price vs EMA if we wanted to update technicals here,
-                # For now just update LTP so the alpha score can use the latest price.
+                
+                from datetime import datetime
+                today_str = datetime.now().strftime("%Y-%m-%d")
+                dp = db.query(models.DailyPerformance).filter(
+                    models.DailyPerformance.ticker == stock.ticker,
+                    models.DailyPerformance.date == today_str
+                ).first()
+                if not dp:
+                    dp = models.DailyPerformance(
+                        ticker=stock.ticker,
+                        date=today_str,
+                        close_price=stock.ltp,
+                        change_pct=stock.change_pct,
+                        volume=getattr(info, 'last_volume', 0) or 0
+                    )
+                    db.add(dp)
+                else:
+                    dp.close_price = stock.ltp
+                    dp.change_pct = stock.change_pct
+                    dp.volume = getattr(info, 'last_volume', 0) or dp.volume
+
             except Exception as e:
                 print(f"Failed to update {stock.ticker}: {e}")
                 
