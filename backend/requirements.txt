@@ -5,3 +5,7 @@ pydantic
 yfinance
 google-genai
 yahooquery
+python-dotenv
+python-jose[cryptography]
+slowapi
+psycopg2-binary

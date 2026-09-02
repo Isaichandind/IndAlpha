@@ -14,7 +14,13 @@ import type { StockData, IndexData, ScreenerFilters, Watchlist, SelectedStock, M
 import { AiChatWidget } from './components/AiChatWidget';
 import { LockScreen } from './components/LockScreen';
 
+import { LoginModal } from './components/LoginModal';
+import { authClient } from './auth';
+
 function App() {
+  const { data: session, isPending: sessionLoading } = authClient.useSession();
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
   const [stocks, setStocks] = useState<StockData[]>([]);
   const [indices, setIndices] = useState<IndexData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -43,7 +49,6 @@ function App() {
 
   useEffect(() => {
     fetchIndices();
-    fetchWatchlists();
     fetchTradingDates();
     fetchMovers();
 
@@ -51,6 +56,16 @@ function App() {
     document.addEventListener('open-settings', handleOpenSettings);
     return () => document.removeEventListener('open-settings', handleOpenSettings);
   }, []);
+
+  // Fetch watchlists when session changes
+  useEffect(() => {
+    if (session?.user) {
+      fetchWatchlists();
+    } else {
+      setWatchlists([]);
+      setActiveWatchlistId(null);
+    }
+  }, [session?.user]);
 
   useEffect(() => {
     fetchStocks();
@@ -118,6 +133,10 @@ function App() {
   };
 
   const handleAddStock = async (stock: SearchResult) => {
+    if (!session?.user) {
+      setIsLoginModalOpen(true);
+      return;
+    }
     if (!activeWatchlistId) {
       alert("Please create or select a watchlist first");
       return;
@@ -274,11 +293,35 @@ function App() {
           >
             {showMobileWatchlist ? <X className="w-5 h-5" /> : <List className="w-5 h-5" />}
           </button>
+          
+          {/* Auth Button */}
+          {sessionLoading ? (
+            <div className="w-8 h-8 rounded-full bg-white/5 animate-pulse"></div>
+          ) : session?.user ? (
+            <button 
+              onClick={async () => await authClient.signOut()}
+              className="flex items-center justify-center w-8 h-8 text-sm font-semibold text-white transition-colors bg-blue-600 rounded-full hover:bg-blue-500"
+              title="Sign out"
+            >
+              {session.user.name?.[0]?.toUpperCase() || session.user.email?.[0]?.toUpperCase() || 'U'}
+            </button>
+          ) : (
+            <button 
+              onClick={() => setIsLoginModalOpen(true)}
+              className="hidden sm:flex px-4 py-1.5 text-xs font-semibold text-white bg-blue-600 rounded-full hover:bg-blue-500 transition-colors"
+            >
+              Sign In
+            </button>
+          )}
+
           <button className="hidden md:block text-indalpha-muted hover:text-indalpha-text transition-colors">
             <Bell className="w-5 h-5" />
           </button>
         </div>
       </header>
+
+      {/* Modals */}
+      <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} />
 
       {/* Live Market Bar */}
       <div className="h-7 bg-black border-b border-indalpha-border flex items-center px-6 text-[11px] shrink-0 overflow-x-auto whitespace-nowrap scrollbar-hide">

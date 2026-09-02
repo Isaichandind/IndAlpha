@@ -1,11 +1,21 @@
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from routers import screener, watchlists, analysis
 from database import engine, SessionLocal
 import models
 from seed import seed_db
+import threading
+
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+
+# Global rate limiter
+limiter = Limiter(key_func=get_remote_address)
+
 import threading
 
 def run_fast_seed():
@@ -36,6 +46,11 @@ async def lifespan(app: FastAPI):
     # Shutdown logic if needed
 
 app = FastAPI(title="IndAlpha PRO API", lifespan=lifespan)
+
+# Attach Rate Limiter
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # Allow specific origins in production, or all origins in local development
 frontend_url = os.getenv("FRONTEND_URL", "*")

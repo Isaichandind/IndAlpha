@@ -1,8 +1,9 @@
 import axios from 'axios';
+import { authClient } from './auth';
 
 export const api = axios.create();
 
-api.interceptors.request.use((config) => {
+api.interceptors.request.use(async (config) => {
   const customUrl = localStorage.getItem('backend_url');
   const envUrl = import.meta.env.VITE_API_URL;
   const isProd = import.meta.env.PROD;
@@ -15,6 +16,17 @@ api.interceptors.request.use((config) => {
   
   // Ensure no trailing slash
   config.baseURL = baseUrl.replace(/\/$/, '');
+
+  // Inject Auth Token
+  try {
+    const { data } = await authClient.getSession();
+    if (data?.session?.token) {
+      config.headers.Authorization = `Bearer ${data.session.token}`;
+    }
+  } catch (e) {
+    // silently fail if not authenticated
+  }
+
   return config;
 });
 

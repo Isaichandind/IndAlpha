@@ -22,3 +22,5 @@ __pycache__/
 # SQLite
 *.db
 *.sqlite3
+.neon
+.env.local

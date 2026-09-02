@@ -6,8 +6,10 @@ import yfinance as yf
 from database import get_db
 import models
 import schemas
+from auth import require_auth
 
-router = APIRouter()
+# Secure all watchlist routes
+router = APIRouter(dependencies=[Depends(require_auth)])
 
 @router.get("/watchlists", response_model=List[schemas.WatchlistResponse])
 def get_watchlists(db: Session = Depends(get_db)):
