@@ -22,6 +22,15 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
           size: 'invisible'
         });
       }
+    } else {
+      if ((window as any).recaptchaVerifier) {
+        try {
+          (window as any).recaptchaVerifier.clear();
+        } catch (error) {
+          // Ignore clear errors
+        }
+        (window as any).recaptchaVerifier = null;
+      }
     }
   }, [isOpen]);
 
@@ -109,8 +118,6 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 <p className="mt-2 text-xs text-gray-500">We'll text you a code to verify your identity.</p>
               </div>
 
-              <div id="recaptcha-container"></div>
-
               <button
                 type="submit"
                 disabled={loading}
@@ -157,6 +164,8 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
               </button>
             </form>
           )}
+
+          <div id="recaptcha-container"></div>
         </div>
       </div>
     </div>
