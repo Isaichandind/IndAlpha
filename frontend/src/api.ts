@@ -88,6 +88,47 @@ api.interceptors.response.use(
           return { data, status: 200, statusText: 'OK', headers: {}, config: error.config };
         }
         
+        // Mock Chart Data for offline mode
+        if (url.includes('/chart')) {
+          const params = new URLSearchParams(error.config.url.split('?')[1]);
+          const period = params.get('period') || '6mo';
+          
+          let numDays = 180;
+          if (period === '1mo') numDays = 30;
+          if (period === '1y') numDays = 365;
+          if (period === '5y') numDays = 1825;
+
+          const candles = [];
+          const now = new Date();
+          let currentPrice = 100 + Math.random() * 900; // Base random price
+          
+          for (let i = numDays; i >= 0; i--) {
+            const date = new Date(now);
+            date.setDate(date.getDate() - i);
+            // Skip weekends
+            if (date.getDay() === 0 || date.getDay() === 6) continue;
+
+            const volatility = currentPrice * 0.02;
+            const open = currentPrice + (Math.random() - 0.5) * volatility;
+            const close = open + (Math.random() - 0.5) * volatility;
+            const high = Math.max(open, close) + Math.random() * volatility;
+            const low = Math.min(open, close) - Math.random() * volatility;
+            const volume = Math.floor(Math.random() * 1000000) + 100000;
+
+            candles.push({
+              time: date.toISOString().split('T')[0],
+              open: parseFloat(open.toFixed(2)),
+              high: parseFloat(high.toFixed(2)),
+              low: parseFloat(low.toFixed(2)),
+              close: parseFloat(close.toFixed(2)),
+              volume
+            });
+            
+            currentPrice = close;
+          }
+          return { data: candles, status: 200, statusText: 'OK', headers: {}, config: error.config };
+        }
+
         // Mock trading dates for historical movers support
         if (url.includes('/market/trading-dates')) {
            const dates = [];
