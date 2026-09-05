@@ -3,18 +3,32 @@ IndAlpha — Sector & Data Enrichment Script
 Fetches real sectors and business profiles for stocks marked as 'Unknown'
 using yahooquery in efficient concurrent batches, and fixes data anomalies.
 """
+
 import sys
 import os
 import time
+import logging
+import sqlite3
+from typing import Dict, Any
 
+# Ensure the backend directory is in the path for imports
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+
 from database import SessionLocal
 import models
+from sqlalchemy.orm import Session
 from yahooquery import Ticker
-import sqlite3
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - [%(module)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
 
 # Well-known mappings for key Indian benchmark equities as instant fallback
-TOP_SECTOR_MAP = {
+TOP_SECTOR_MAP: Dict[str, str] = {
     'TCS.NS': 'Technology',
     'INFY.NS': 'Technology',
     'WIPRO.NS': 'Technology',
@@ -94,107 +108,146 @@ TOP_SECTOR_MAP = {
     'GODREJPROP.NS': 'Real Estate',
 }
 
-def enrich():
-    db = SessionLocal()
-    print("=" * 60)
-    print("  IndAlpha: Enriching Sectors & Fundamentals")
-    print("=" * 60)
+def apply_benchmark_mappings(db: Session) -> int:
+    """Apply instant top mappings for known benchmark equities."""
+    logger.info("Applying known top sector mappings...")
+    applied_known = 0
+    for ticker, sector in TOP_SECTOR_MAP.items():
+        stock = db.query(models.Stock).filter(models.Stock.ticker == ticker).first()
+        if stock and stock.sector != sector:
+            stock.sector = sector
+            applied_known += 1
+    
+    if applied_known > 0:
+        db.commit()
+    logger.info("Applied %d benchmark mappings.", applied_known)
+    return applied_known
 
+def fetch_missing_sectors(db: Session, batch_size: int = 50) -> int:
+    """Fetch missing sectors via yahooquery in batches for 'Unknown' stocks."""
+    logger.info("Querying Yahoo Profile for remaining 'Unknown' stocks...")
+    unknowns = db.query(models.Stock).filter(
+        (models.Stock.sector == 'Unknown') | (models.Stock.sector.is_(None))
+    ).order_by(models.Stock.market_cap.desc()).all()
+
+    total_unknown = len(unknowns)
+    logger.info("Found %d stocks with Unknown sector.", total_unknown)
+
+    if total_unknown == 0:
+        return 0
+
+    updated_sectors = 0
+    total_batches = (total_unknown + batch_size - 1) // batch_size
+
+    for i in range(0, total_unknown, batch_size):
+        batch = unknowns[i:i+batch_size]
+        symbols = [s.ticker for s in batch]
+        current_batch = i // batch_size + 1
+        logger.info("Processing Batch %d/%d (%d stocks)...", current_batch, total_batches, len(symbols))
+
+        try:
+            t = Ticker(symbols, asynchronous=True)
+            profiles = t.summary_profile
+            
+            if isinstance(profiles, dict):
+                for stock in batch:
+                    p = profiles.get(stock.ticker)
+                    if isinstance(p, dict):
+                        sec = p.get('sector')
+                        if sec and sec != 'Unknown':
+                            stock.sector = sec
+                            updated_sectors += 1
+            db.commit()
+        except Exception as e:
+            logger.error("Batch %d failed: %s", current_batch, e)
+            db.rollback()
+
+        # Rate limiting sleep
+        time.sleep(0.5)
+
+    logger.info("Updated %d sectors from Yahoo.", updated_sectors)
+    return updated_sectors
+
+def fix_fundamental_anomalies(db: Session) -> int:
+    """Validates and fixes anomalies in fundamental data."""
+    logger.info("Validating and fixing fundamental anomalies...")
+    funds = db.query(models.Fundamentals).all()
+    fixed_funds = 0
+
+    for f in funds:
+        modified = False
+        
+        # If ROE > 10 but ROCE is near 0 or missing, align ROCE to ROE * 1.05
+        if f.roe and f.roe > 10.0 and (not f.roce or f.roce < 1.0):
+            f.roce = round(f.roe * 1.08, 2)
+            modified = True
+
+        # If PE is negative, set to 0.0 for clean display
+        if f.pe_ratio and f.pe_ratio < 0:
+            f.pe_ratio = 0.0
+            modified = True
+            
+        if modified:
+            fixed_funds += 1
+
+    if fixed_funds > 0:
+        db.commit()
+        
+    logger.info("Fixed %d fundamentals records.", fixed_funds)
+    return fixed_funds
+
+def sync_to_sqlite(db: Session) -> None:
+    """Synchronize enriched data back to local SQLite database if it exists."""
+    sqlite_path = os.path.join(os.path.dirname(__file__), "indalpha.db")
+    if not os.path.exists(sqlite_path):
+        return
+        
+    logger.info("Synchronizing enriched sectors back to SQLite indalpha.db...")
     try:
-        # Step 1: Apply instant top mappings
-        print("\n1. Applying known top sector mappings...")
-        applied_known = 0
-        for ticker, sector in TOP_SECTOR_MAP.items():
-            stock = db.query(models.Stock).filter(models.Stock.ticker == ticker).first()
-            if stock:
-                stock.sector = sector
-                applied_known += 1
-        db.commit()
-        print(f"   Applied {applied_known} benchmark mappings.")
+        with sqlite3.connect(sqlite_path) as sq_conn:
+            sq_cur = sq_conn.cursor()
+            
+            stocks = db.query(models.Stock).all()
+            stock_updates = [(s.sector, s.ticker) for s in stocks if s.sector]
+            sq_cur.executemany("UPDATE stocks SET sector = ? WHERE ticker = ?", stock_updates)
+            
+            funds = db.query(models.Fundamentals).all()
+            fund_updates = [(f.roce, f.roe, f.pe_ratio, f.ticker) for f in funds]
+            sq_cur.executemany(
+                "UPDATE fundamentals SET roce = ?, roe = ?, pe_ratio = ? WHERE ticker = ?", 
+                fund_updates
+            )
+            
+            sq_conn.commit()
+        logger.info("SQLite indalpha.db synchronized successfully.")
+    except Exception as e:
+        logger.error("Failed to synchronize with SQLite: %s", e)
 
-        # Step 2: Fetch missing sectors via yahooquery in batches
-        print("\n2. Querying Yahoo Profile for remaining 'Unknown' stocks...")
-        unknowns = db.query(models.Stock).filter(
-            (models.Stock.sector == 'Unknown') | (models.Stock.sector == None)
-        ).order_by(models.Stock.market_cap.desc()).all()
+def enrich() -> None:
+    """Main orchestration function for enrichment."""
+    logger.info("=" * 60)
+    logger.info("IndAlpha: Enriching Sectors & Fundamentals")
+    logger.info("=" * 60)
 
-        total_unknown = len(unknowns)
-        print(f"   Found {total_unknown} stocks with Unknown sector.")
-
-        batch_size = 50
-        updated_sectors = 0
-
-        for i in range(0, total_unknown, batch_size):
-            batch = unknowns[i:i+batch_size]
-            symbols = [s.ticker for s in batch]
-            print(f"   Batch {i//batch_size + 1}/{(total_unknown + batch_size - 1)//batch_size} ({len(symbols)} stocks)...")
-
-            try:
-                t = Ticker(symbols, asynchronous=True)
-                profiles = t.summary_profile
-                if isinstance(profiles, dict):
-                    for stock in batch:
-                        p = profiles.get(stock.ticker)
-                        if isinstance(p, dict):
-                            sec = p.get('sector')
-                            if sec and sec != 'Unknown':
-                                stock.sector = sec
-                                updated_sectors += 1
-                db.commit()
-            except Exception as e:
-                print(f"   Batch failed: {e}")
-                db.rollback()
-
-            time.sleep(0.5)
-
-        print(f"   [DONE] Updated {updated_sectors} sectors from Yahoo.")
-
-        # Step 3: Fix data anomalies in fundamentals
-        print("\n3. Validating and fixing fundamental anomalies...")
-        funds = db.query(models.Fundamentals).all()
-        fixed_funds = 0
-
-        for f in funds:
-            # If ROE > 10 but ROCE is near 0 or missing, align ROCE to ROE * 1.05
-            if f.roe and f.roe > 10.0 and (not f.roce or f.roce < 1.0):
-                f.roce = round(f.roe * 1.08, 2)
-                fixed_funds += 1
-
-            # If PE is negative, set to 0.0 for clean display
-            if f.pe_ratio and f.pe_ratio < 0:
-                f.pe_ratio = 0.0
-                fixed_funds += 1
-
-        db.commit()
-        print(f"   [DONE] Fixed {fixed_funds} fundamentals records.")
+    db: Session = SessionLocal()
+    try:
+        apply_benchmark_mappings(db)
+        fetch_missing_sectors(db)
+        fix_fundamental_anomalies(db)
 
         # Check final stats
         unknown_rem = db.query(models.Stock).filter(models.Stock.sector == 'Unknown').count()
         known_count = db.query(models.Stock).filter(models.Stock.sector != 'Unknown').count()
-        print(f"\nFinal Sector Breakdown: {known_count} Known vs {unknown_rem} Unknown remaining.")
+        logger.info("Final Sector Breakdown: %d Known vs %d Unknown remaining.", known_count, unknown_rem)
 
-        # Sync to SQLite indalpha.db as well so local matches Neon
-        sqlite_path = os.path.join(os.path.dirname(__file__), "indalpha.db")
-        if os.path.exists(sqlite_path):
-            print("\n4. Synchronizing enriched sectors back to SQLite indalpha.db...")
-            sq_conn = sqlite3.connect(sqlite_path)
-            sq_cur = sq_conn.cursor()
-            stocks = db.query(models.Stock).all()
-            for s in stocks:
-                sq_cur.execute("UPDATE stocks SET sector = ? WHERE ticker = ?", (s.sector, s.ticker))
-            for f in funds:
-                sq_cur.execute("UPDATE fundamentals SET roce = ?, roe = ?, pe_ratio = ? WHERE ticker = ?", 
-                               (f.roce, f.roe, f.pe_ratio, f.ticker))
-            sq_conn.commit()
-            sq_conn.close()
-            print("   [DONE] SQLite indalpha.db synchronized.")
+        sync_to_sqlite(db)
 
-        print("\n" + "=" * 60)
-        print("  ENRICHMENT COMPLETE SUCCESSFULLY!")
-        print("=" * 60)
+        logger.info("=" * 60)
+        logger.info("ENRICHMENT COMPLETE SUCCESSFULLY!")
+        logger.info("=" * 60)
 
     except Exception as e:
-        print(f"[ERROR] Enrichment error: {e}")
+        logger.exception("Enrichment error occurred: %s", e)
         db.rollback()
     finally:
         db.close()
