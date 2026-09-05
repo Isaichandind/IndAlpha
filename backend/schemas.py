@@ -91,9 +91,11 @@ class ScreenerFilter(BaseModel):
     max_change_pct: Optional[float] = None
     market_cap_category: Optional[str] = None
 
-    # Pagination
+    # Pagination & Sorting
     page: int = 1
     limit: int = 50
+    sort_by: Optional[str] = None
+    sort_order: Optional[str] = 'desc'
 
 class PaginatedStockResponse(BaseModel):
     total_count: int

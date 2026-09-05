@@ -6,6 +6,9 @@ interface ScreenerTableProps {
   stocks: StockData[];
   loading: boolean;
   onSelectStock?: (stock: SelectedStock) => void;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  onSort?: (key: string, order: 'asc' | 'desc') => void;
 }
 
 const AlphaGauge = ({ score }: { score: number }) => {
@@ -45,7 +48,7 @@ const ALL_COLUMNS: { key: ColumnKey; label: string; defaultVisible: boolean }[] 
   { key: 'tag', label: 'Tag', defaultVisible: false },
 ];
 
-export const ScreenerTable: React.FC<ScreenerTableProps> = ({ stocks, loading, onSelectStock }) => {
+export const ScreenerTable: React.FC<ScreenerTableProps> = ({ stocks, loading, onSelectStock, sortBy, sortOrder, onSort }) => {
   const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(
     new Set(ALL_COLUMNS.filter(c => c.defaultVisible).map(c => c.key))
   );
@@ -133,8 +136,26 @@ export const ScreenerTable: React.FC<ScreenerTableProps> = ({ stocks, loading, o
           <thead className="bg-indalpha-card border-b border-indalpha-border text-xs uppercase text-indalpha-muted sticky top-0 z-10">
             <tr>
               {ALL_COLUMNS.map(col => visibleColumns.has(col.key) && (
-                <th key={col.key} className={`px-6 py-4 font-semibold ${col.key === 'alpha' ? 'text-center' : ''}`}>
-                  {col.label}
+                <th 
+                  key={col.key} 
+                  className={`px-6 py-4 font-semibold select-none ${col.key === 'rank' ? '' : 'cursor-pointer hover:text-indalpha-green transition-colors'} ${col.key === 'alpha' ? 'text-center' : ''}`}
+                  onClick={() => {
+                    if (col.key === 'rank' || !onSort) return;
+                    if (sortBy === col.key) {
+                      onSort(col.key, sortOrder === 'desc' ? 'asc' : 'desc');
+                    } else {
+                      onSort(col.key, 'desc'); // default new sort to desc
+                    }
+                  }}
+                >
+                  <div className={`flex items-center gap-1 ${col.key === 'alpha' ? 'justify-center' : ''}`}>
+                    {col.label}
+                    {sortBy === col.key && (
+                      <span className="text-indalpha-green">
+                        {sortOrder === 'desc' ? '↓' : '↑'}
+                      </span>
+                    )}
+                  </div>
                 </th>
               ))}
             </tr>

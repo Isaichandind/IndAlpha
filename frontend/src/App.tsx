@@ -448,7 +448,14 @@ function App() {
               </div>
             </div>
             
-            <ScreenerTable stocks={filteredTableStocks} loading={loading} onSelectStock={handleViewChart} />
+            <ScreenerTable 
+              stocks={filteredTableStocks} 
+              loading={loading} 
+              onSelectStock={handleViewChart}
+              sortBy={filters.sort_by}
+              sortOrder={filters.sort_order || 'desc'}
+              onSort={(key, order) => setFilters(prev => ({ ...prev, sort_by: key, sort_order: order, page: 1 }))}
+            />
             
             {/* Pagination Controls */}
             {!loading && totalPages > 1 && (

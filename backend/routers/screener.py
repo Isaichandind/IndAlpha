@@ -116,12 +116,34 @@ def filter_stocks(filters: schemas.ScreenerFilter, db: Session = Depends(get_db)
     total_pages = math.ceil(total_count / filters.limit) if total_count > 0 else 1
     
     # We must sort BEFORE pagination so the pages are consistent.
+    
+    # Map frontend sort keys to SQLAlchemy columns
+    SORT_COLUMNS = {
+        'ticker': models.Stock.ticker,
+        'ltp': models.Stock.ltp,
+        'mcap': models.Stock.market_cap,
+        'roce': models.Fundamentals.roce,
+        'pe': models.Fundamentals.pe_ratio,
+        'de': models.Fundamentals.debt_to_equity,
+        'ph': models.Fundamentals.promoter_holding,
+        'delivery': models.Technicals.delivery_volume,
+        'eps': models.Fundamentals.eps,
+        'div': models.Fundamentals.dividend_yield,
+        'pb': models.Fundamentals.pb_ratio,
+        'bv': models.Fundamentals.book_value,
+        'change_pct': models.Stock.change_pct
+    }
+
     if filters.performance_date:
         query = query.order_by(models.DailyPerformance.change_pct.desc())
+    elif filters.sort_by and filters.sort_by in SORT_COLUMNS:
+        col = SORT_COLUMNS[filters.sort_by]
+        if filters.sort_order == 'asc':
+            query = query.order_by(col.asc())
+        else:
+            query = query.order_by(col.desc())
     else:
-        # Sort by alpha_score (which isn't in the DB directly, so we have to fetch all if we want exact alpha sorting.
-        # Wait, if alpha_score is calculated dynamically, we can't sort by it in SQL easily unless we proxy it.
-        # Let's sort by market_cap desc for consistent pagination.
+        # Default sort by market_cap desc for consistent pagination
         query = query.order_by(models.Stock.market_cap.desc())
 
     offset = (filters.page - 1) * filters.limit
@@ -161,10 +183,10 @@ def filter_stocks(filters: schemas.ScreenerFilter, db: Session = Depends(get_db)
                 response[-1].change_pct = hist_record.change_pct
 
     # Sort by change_pct if querying history, otherwise by alpha score
-    # Re-sort the current page by alpha score or change_pct
+    # Re-sort the current page by alpha score or change_pct only if no explicit sort
     if filters.performance_date:
         response.sort(key=lambda x: x.change_pct, reverse=True)
-    else:
+    elif not filters.sort_by:
         response.sort(key=lambda x: x.alpha_score, reverse=True)
         
     return schemas.PaginatedStockResponse(

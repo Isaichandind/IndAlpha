@@ -46,6 +46,8 @@ export interface ScreenerFilters {
   market_cap_category?: string;
   page?: number;
   limit?: number;
+  sort_by?: string;
+  sort_order?: 'asc' | 'desc';
 }
 
 export interface PaginatedStockResponse {
