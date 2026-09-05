@@ -29,12 +29,13 @@ const AlphaGauge = ({ score }: { score: number }) => {
   );
 };
 
-type ColumnKey = 'rank' | 'ticker' | 'ltp' | 'mcap' | 'alpha' | 'roce' | 'pe' | 'de' | 'ph' | 'delivery' | 'eps' | 'div' | 'pb' | 'bv' | 'tag';
+type ColumnKey = 'rank' | 'ticker' | 'ltp' | 'change_pct' | 'mcap' | 'alpha' | 'roce' | 'pe' | 'de' | 'ph' | 'delivery' | 'eps' | 'div' | 'pb' | 'bv' | 'tag';
 
 const ALL_COLUMNS: { key: ColumnKey; label: string; defaultVisible: boolean }[] = [
   { key: 'rank', label: 'Rank', defaultVisible: true },
   { key: 'ticker', label: 'Ticker & Company', defaultVisible: true },
-  { key: 'ltp', label: 'LTP (1D%)', defaultVisible: true },
+  { key: 'ltp', label: 'LTP (₹)', defaultVisible: true },
+  { key: 'change_pct', label: '1D Change %', defaultVisible: true },
   { key: 'mcap', label: 'Market Cap', defaultVisible: true },
   { key: 'alpha', label: 'Alpha Score', defaultVisible: true },
   { key: 'roce', label: 'ROCE / ROE', defaultVisible: true },
@@ -179,14 +180,16 @@ export const ScreenerTable: React.FC<ScreenerTableProps> = ({ stocks, loading, o
                 )}
                 {visibleColumns.has('ltp') && (
                   <td className="px-6 py-4 font-semibold text-indalpha-text">
-                    <div className="flex flex-col">
-                      <span>₹{stock.ltp.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                      {stock.change_pct !== undefined && (
-                        <span className={`text-xs ${stock.change_pct >= 0 ? 'text-indalpha-green' : 'text-indalpha-red'}`}>
-                          {stock.change_pct >= 0 ? '+' : ''}{stock.change_pct.toFixed(2)}%
-                        </span>
-                      )}
-                    </div>
+                    ₹{stock.ltp.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                )}
+                {visibleColumns.has('change_pct') && (
+                  <td className="px-6 py-4 font-semibold">
+                    {stock.change_pct !== undefined && (
+                      <span className={`${stock.change_pct >= 0 ? 'text-indalpha-green' : 'text-indalpha-red'}`}>
+                        {stock.change_pct >= 0 ? '+' : ''}{stock.change_pct.toFixed(2)}%
+                      </span>
+                    )}
                   </td>
                 )}
                 {visibleColumns.has('mcap') && (
