@@ -91,6 +91,16 @@ class ScreenerFilter(BaseModel):
     max_change_pct: Optional[float] = None
     market_cap_category: Optional[str] = None
 
+    # Pagination
+    page: int = 1
+    limit: int = 50
+
+class PaginatedStockResponse(BaseModel):
+    total_count: int
+    total_pages: int
+    current_page: int
+    data: List[StockListResponse]
+
 class WatchlistItemBase(BaseModel):
     symbol: str
     name: str

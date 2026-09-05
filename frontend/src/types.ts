@@ -44,6 +44,15 @@ export interface ScreenerFilters {
   min_change_pct?: number;
   max_change_pct?: number;
   market_cap_category?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface PaginatedStockResponse {
+  total_count: number;
+  total_pages: number;
+  current_page: number;
+  data: StockData[];
 }
 
 export interface WatchlistItem {

@@ -49,7 +49,7 @@ def get_market_indices():
         ]
     return response
 
-@router.post("/screener/filter", response_model=List[schemas.StockListResponse])
+@router.post("/screener/filter", response_model=schemas.PaginatedStockResponse)
 def filter_stocks(filters: schemas.ScreenerFilter, db: Session = Depends(get_db)):
     query = db.query(models.Stock).outerjoin(models.Fundamentals).outerjoin(models.Technicals).options(
         joinedload(models.Stock.fundamentals),
@@ -111,7 +111,21 @@ def filter_stocks(filters: schemas.ScreenerFilter, db: Session = Depends(get_db)
     if filters.supertrend_bullish is not None:
         query = query.filter(models.Technicals.supertrend_bullish == filters.supertrend_bullish)
 
-    stocks = query.all()
+    import math
+    total_count = query.count()
+    total_pages = math.ceil(total_count / filters.limit) if total_count > 0 else 1
+    
+    # We must sort BEFORE pagination so the pages are consistent.
+    if filters.performance_date:
+        query = query.order_by(models.DailyPerformance.change_pct.desc())
+    else:
+        # Sort by alpha_score (which isn't in the DB directly, so we have to fetch all if we want exact alpha sorting.
+        # Wait, if alpha_score is calculated dynamically, we can't sort by it in SQL easily unless we proxy it.
+        # Let's sort by market_cap desc for consistent pagination.
+        query = query.order_by(models.Stock.market_cap.desc())
+
+    offset = (filters.page - 1) * filters.limit
+    stocks = query.offset(offset).limit(filters.limit).all()
 
     response = []
     for stock in stocks:
@@ -147,12 +161,18 @@ def filter_stocks(filters: schemas.ScreenerFilter, db: Session = Depends(get_db)
                 response[-1].change_pct = hist_record.change_pct
 
     # Sort by change_pct if querying history, otherwise by alpha score
+    # Re-sort the current page by alpha score or change_pct
     if filters.performance_date:
         response.sort(key=lambda x: x.change_pct, reverse=True)
     else:
         response.sort(key=lambda x: x.alpha_score, reverse=True)
         
-    return response
+    return schemas.PaginatedStockResponse(
+        total_count=total_count,
+        total_pages=total_pages,
+        current_page=filters.page,
+        data=response
+    )
 
 @router.post("/screener/sync")
 def sync_market_data(db: Session = Depends(get_db)):

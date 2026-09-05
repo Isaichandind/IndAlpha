@@ -10,7 +10,7 @@ import { WatchlistSidebar } from './components/WatchlistSidebar';
 import { StockDetailPanel } from './components/StockDetailPanel';
 import { QueryBar } from './components/QueryBar';
 import { MarketMovers } from './components/MarketMovers';
-import type { StockData, IndexData, ScreenerFilters, Watchlist, SelectedStock, MarketMoversData } from './types';
+import type { StockData, IndexData, ScreenerFilters, Watchlist, SelectedStock, MarketMoversData, PaginatedStockResponse } from './types';
 import { AiChatWidget } from './components/AiChatWidget';
 import { LockScreen } from './components/LockScreen';
 
@@ -29,7 +29,9 @@ function App() {
   const [indices, setIndices] = useState<IndexData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [syncing, setSyncing] = useState<boolean>(false);
-  const [filters, setFilters] = useState<ScreenerFilters>({});
+  const [filters, setFilters] = useState<ScreenerFilters>({ page: 1, limit: 50 });
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [totalStocksCount, setTotalStocksCount] = useState<number>(0);
   const [tableSearchQuery, setTableSearchQuery] = useState('');
   
   const [watchlists, setWatchlists] = useState<Watchlist[]>([]);
@@ -226,8 +228,10 @@ function App() {
   const fetchStocks = async () => {
     setLoading(true);
     try {
-      const res = await axios.post('/screener/filter', filters);
-      setStocks(res.data);
+      const res = await axios.post<PaginatedStockResponse>('/screener/filter', filters);
+      setStocks(res.data.data);
+      setTotalPages(res.data.total_pages);
+      setTotalStocksCount(res.data.total_count);
     } catch (err) {
       console.error(err);
     } finally {
@@ -253,7 +257,11 @@ function App() {
   };
 
   const handleQueryResults = (results: StockData[]) => {
+    // When using QueryBar, we just inject the list directly and override pagination
     setStocks(results);
+    setTotalStocksCount(results.length);
+    setTotalPages(1);
+    setFilters(prev => ({ ...prev, page: 1 }));
   };
 
   const filteredTableStocks = stocks.filter(s => 
@@ -410,7 +418,7 @@ function App() {
               <h1 className="text-lg font-semibold text-indalpha-text flex items-center">
                 Screener Output 
                 <span className="text-xs font-normal text-indalpha-green ml-2 border border-indalpha-green/30 bg-indalpha-green/10 px-2 py-0.5 rounded">
-                  {filteredTableStocks.length} stocks
+                  {totalStocksCount} stocks found
                 </span>
               </h1>
               <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -441,6 +449,29 @@ function App() {
             </div>
             
             <ScreenerTable stocks={filteredTableStocks} loading={loading} onSelectStock={handleViewChart} />
+            
+            {/* Pagination Controls */}
+            {!loading && totalPages > 1 && (
+              <div className="flex items-center justify-center gap-4 mt-6 mb-4">
+                <button
+                  disabled={filters.page === 1}
+                  onClick={() => setFilters(prev => ({ ...prev, page: (prev.page || 1) - 1 }))}
+                  className="px-4 py-2 border border-indalpha-border rounded text-sm text-indalpha-text hover:bg-indalpha-card disabled:opacity-50 transition-colors"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-indalpha-muted">
+                  Page <span className="text-indalpha-text">{filters.page || 1}</span> of {totalPages}
+                </span>
+                <button
+                  disabled={(filters.page || 1) >= totalPages}
+                  onClick={() => setFilters(prev => ({ ...prev, page: (prev.page || 1) + 1 }))}
+                  className="px-4 py-2 border border-indalpha-border rounded text-sm text-indalpha-text hover:bg-indalpha-card disabled:opacity-50 transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         </div>
         
