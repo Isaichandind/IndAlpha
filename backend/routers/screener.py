@@ -665,6 +665,36 @@ def _safe_float(val, default=0.0):
     except (TypeError, ValueError):
         return default
 
+@router.get("/stock/{symbol}/about")
+def get_stock_about(symbol: str):
+    """Fetch company profile, website, and business summary from yfinance."""
+    try:
+        ticker = yf.Ticker(symbol)
+        info = ticker.info
+        
+        return {
+            "symbol": symbol,
+            "name": info.get("shortName") or info.get("longName") or "",
+            "sector": info.get("sector", ""),
+            "industry": info.get("industry", ""),
+            "website": info.get("website", ""),
+            "summary": info.get("longBusinessSummary", ""),
+            "employees": info.get("fullTimeEmployees", 0),
+            "address": f"{info.get('city', '')}, {info.get('country', '')}".strip(', ')
+        }
+    except Exception as e:
+        print(f"About data error for {symbol}: {e}")
+        return {
+            "symbol": symbol,
+            "name": "",
+            "sector": "",
+            "industry": "",
+            "website": "",
+            "summary": "Profile information is currently unavailable for this company.",
+            "employees": 0,
+            "address": ""
+        }
+
 @router.get("/stock/{symbol}/quote")
 def get_stock_quote(symbol: str):
     """Fetch real-time quote data for a stock."""

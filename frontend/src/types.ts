@@ -181,6 +181,17 @@ export interface InsiderRosterEntry {
   date: string;
 }
 
+export interface CompanyAbout {
+  symbol: string;
+  name: string;
+  sector: string;
+  industry: string;
+  website: string;
+  summary: string;
+  employees: number;
+  address: string;
+}
+
 export interface HoldingsResponse {
   summary: {
     promoters_pct: number;

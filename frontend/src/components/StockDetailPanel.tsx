@@ -6,7 +6,7 @@ import { FinancialsView } from './FinancialsView';
 import { HoldingsView } from './HoldingsView';
 import { FundamentalAnalysis } from './FundamentalAnalysis';
 import { SmartLoader } from './SmartLoader';
-import type { CandleData, StockQuote, SelectedStock, FullStockProfile, SectorBenchmarks } from '../types';
+import type { CandleData, StockQuote, SelectedStock, FullStockProfile, SectorBenchmarks, CompanyAbout } from '../types';
 
 interface StockDetailPanelProps {
   stock: SelectedStock | null;
@@ -25,14 +25,16 @@ const PERIODS = [
 ];
 
 export function StockDetailPanel({ stock, onClose }: StockDetailPanelProps) {
-  const [activeTab, setActiveTab] = useState<'chart' | 'fundamentals' | 'financials' | 'holdings' | 'fundamental_ai'>('chart');
+  const [activeTab, setActiveTab] = useState<'chart' | 'about' | 'fundamentals' | 'financials' | 'holdings' | 'fundamental_ai'>('chart');
   const [activePeriod, setActivePeriod] = useState(PERIODS[4]); // 6M default
   const [candles, setCandles] = useState<CandleData[]>([]);
   const [quote, setQuote] = useState<StockQuote | null>(null);
   const [profile, setProfile] = useState<FullStockProfile | null>(null);
   const [benchmarks, setBenchmarks] = useState<SectorBenchmarks | null>(null);
+  const [about, setAbout] = useState<CompanyAbout | null>(null);
   const [chartLoading, setChartLoading] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [aboutLoading, setAboutLoading] = useState(false);
 
   useEffect(() => {
     if (!stock) return;
@@ -43,6 +45,7 @@ export function StockDetailPanel({ stock, onClose }: StockDetailPanelProps) {
     setQuote(null);
     setProfile(null);
     setBenchmarks(null);
+    setAbout(null);
     
     const fetchQuote = async () => {
       try {
@@ -77,8 +80,21 @@ export function StockDetailPanel({ stock, onClose }: StockDetailPanelProps) {
       }
     };
 
+    const fetchAbout = async () => {
+      setAboutLoading(true);
+      try {
+        const res = await axios.get(`/stock/${stock.symbol}/about`);
+        if (isMounted) setAbout(res.data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (isMounted) setAboutLoading(false);
+      }
+    };
+
     fetchQuote();
     fetchProfile();
+    fetchAbout();
 
     return () => {
       isMounted = false;
@@ -167,6 +183,7 @@ export function StockDetailPanel({ stock, onClose }: StockDetailPanelProps) {
         <div className="flex border-b border-indalpha-border shrink-0 bg-indalpha-dark px-2 overflow-x-auto custom-scrollbar">
           {[
             { key: 'chart' as const, label: 'Chart & Price Action', icon: BarChart3 },
+            { key: 'about' as const, label: 'Business Profile', icon: FileText },
             { key: 'fundamentals' as const, label: 'Fundamentals & Tech', icon: FileText },
             { key: 'financials' as const, label: 'Financials (P&L)', icon: FileText },
             { key: 'holdings' as const, label: 'Holdings Pattern', icon: PieChartIcon },
@@ -227,7 +244,67 @@ export function StockDetailPanel({ stock, onClose }: StockDetailPanelProps) {
             </div>
           )}
 
-          {activeTab === 'fundamentals' && (
+          {activeTab === 'about' && (
+            <div className="p-4 sm:p-6 space-y-6">
+              {aboutLoading ? (
+                <div className="flex items-center justify-center h-64">
+                  <SmartLoader message="Loading business profile..." rotateIntervalMs={0} />
+                </div>
+              ) : about ? (
+                <div className="animate-fade-in space-y-6">
+                  {/* Executive Summary */}
+                  <div className="bg-indalpha-card rounded-lg border border-indalpha-border p-5">
+                    <h3 className="text-sm font-bold text-indalpha-text uppercase tracking-widest flex items-center gap-2 mb-4">
+                      What they do (Business Summary)
+                    </h3>
+                    <p className="text-indalpha-muted leading-relaxed whitespace-pre-wrap text-[13px]">
+                      {about.summary || "No detailed business summary available for this company."}
+                    </p>
+                  </div>
+                  
+                  {/* Quick Facts */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="bg-indalpha-card rounded-lg border border-indalpha-border p-4">
+                      <div className="text-[10px] uppercase font-bold text-indalpha-muted tracking-wider mb-1">Sector</div>
+                      <div className="font-medium text-indalpha-text">{about.sector || "N/A"}</div>
+                    </div>
+                    <div className="bg-indalpha-card rounded-lg border border-indalpha-border p-4">
+                      <div className="text-[10px] uppercase font-bold text-indalpha-muted tracking-wider mb-1">Industry</div>
+                      <div className="font-medium text-indalpha-text">{about.industry || "N/A"}</div>
+                    </div>
+                    <div className="bg-indalpha-card rounded-lg border border-indalpha-border p-4">
+                      <div className="text-[10px] uppercase font-bold text-indalpha-muted tracking-wider mb-1">Employees</div>
+                      <div className="font-medium text-indalpha-text">{about.employees ? about.employees.toLocaleString() : "N/A"}</div>
+                    </div>
+                    <div className="bg-indalpha-card rounded-lg border border-indalpha-border p-4">
+                      <div className="text-[10px] uppercase font-bold text-indalpha-muted tracking-wider mb-1">Headquarters</div>
+                      <div className="font-medium text-indalpha-text text-sm truncate" title={about.address}>{about.address || "N/A"}</div>
+                    </div>
+                  </div>
+
+                  {/* Links */}
+                  {about.website && (
+                    <div className="flex justify-end">
+                      <a 
+                        href={about.website} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-xs text-indalpha-green hover:text-indalpha-green/80 flex items-center gap-1 font-medium transition-colors border border-indalpha-green/30 bg-indalpha-green/10 px-3 py-1.5 rounded"
+                      >
+                        Visit Official Website
+                      </a>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-64 text-indalpha-muted">
+                  Failed to load business profile.
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'fundamentals' && profile && (
             <div className="p-6">
               {profileLoading || !profile ? (
                 <div className="flex items-center justify-center h-64">
