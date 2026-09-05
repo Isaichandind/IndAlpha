@@ -21,7 +21,13 @@ export function StockChart({ candles, loading, symbol }: StockChartProps) {
       chartRef.current = null;
     }
 
-    const chart = createChart(chartContainerRef.current, {
+    const container = chartContainerRef.current;
+    
+    // Fallbacks to prevent crash if layout isn't painted yet
+    const initialWidth = container.clientWidth > 0 ? container.clientWidth : 600;
+    const initialHeight = container.clientHeight > 0 ? container.clientHeight : 320;
+
+    const chart = createChart(container, {
       layout: {
         background: { type: ColorType.Solid, color: '#0f1115' },
         textColor: '#94a3b8',
@@ -49,11 +55,11 @@ export function StockChart({ candles, loading, symbol }: StockChartProps) {
       },
       timeScale: {
         borderColor: '#1f2937',
-        timeVisible: false,
+        timeVisible: true, // Crucial for intraday charts
       },
       handleScroll: { vertTouchDrag: false },
-      width: chartContainerRef.current.clientWidth,
-      height: 320,
+      width: initialWidth,
+      height: initialHeight,
     });
 
     chartRef.current = chart;
@@ -68,15 +74,18 @@ export function StockChart({ candles, loading, symbol }: StockChartProps) {
       wickDownColor: '#ef4444',
     });
 
-    const formattedCandles = candles.map(c => ({
-      time: c.time as any,
-      open: c.open,
-      high: c.high,
-      low: c.low,
-      close: c.close,
-    }));
-
-    candleSeries.setData(formattedCandles);
+    try {
+      const formattedCandles = candles.map(c => ({
+        time: c.time as any,
+        open: c.open,
+        high: c.high,
+        low: c.low,
+        close: c.close,
+      }));
+      candleSeries.setData(formattedCandles);
+    } catch (err) {
+      console.error('Failed to set candle data', err);
+    }
 
     // Volume series
     const volumeSeries = chart.addSeries(HistogramSeries, {
@@ -88,26 +97,32 @@ export function StockChart({ candles, loading, symbol }: StockChartProps) {
       scaleMargins: { top: 0.85, bottom: 0 },
     });
 
-    const volumeData = candles.map(c => ({
-      time: c.time as any,
-      value: c.volume,
-      color: c.close >= c.open ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)',
-    }));
-
-    volumeSeries.setData(volumeData);
+    try {
+      const volumeData = candles.map(c => ({
+        time: c.time as any,
+        value: c.volume,
+        color: c.close >= c.open ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)',
+      }));
+      volumeSeries.setData(volumeData);
+    } catch (err) {
+      console.error('Failed to set volume data', err);
+    }
 
     chart.timeScale().fitContent();
 
-    // Resize handler
-    const handleResize = () => {
-      if (chartContainerRef.current && chartRef.current) {
-        chartRef.current.applyOptions({ width: chartContainerRef.current.clientWidth });
+    // Use ResizeObserver for robust resizing
+    const resizeObserver = new ResizeObserver(entries => {
+      if (entries.length === 0 || !chartRef.current) return;
+      const { width, height } = entries[0].contentRect;
+      if (width > 0 && height > 0) {
+        chartRef.current.applyOptions({ width, height });
       }
-    };
-    window.addEventListener('resize', handleResize);
+    });
+
+    resizeObserver.observe(container);
 
     return () => {
-      window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
       if (chartRef.current) {
         chartRef.current.remove();
         chartRef.current = null;
@@ -117,7 +132,7 @@ export function StockChart({ candles, loading, symbol }: StockChartProps) {
 
   if (loading) {
     return (
-      <div className="h-80 flex items-center justify-center bg-indalpha-dark rounded-lg">
+      <div className="h-[320px] w-full flex items-center justify-center bg-indalpha-dark rounded-lg">
         <div className="flex flex-col items-center gap-2">
           <div className="w-6 h-6 border-2 border-indalpha-green border-t-transparent rounded-full animate-spin" />
           <span className="text-xs text-indalpha-muted">Loading chart data...</span>
@@ -128,11 +143,11 @@ export function StockChart({ candles, loading, symbol }: StockChartProps) {
 
   if (candles.length === 0) {
     return (
-      <div className="h-80 flex items-center justify-center bg-indalpha-dark rounded-lg">
+      <div className="h-[320px] w-full flex items-center justify-center bg-indalpha-dark rounded-lg">
         <span className="text-sm text-indalpha-muted">No chart data available for {symbol}</span>
       </div>
     );
   }
 
-  return <div ref={chartContainerRef} className="w-full rounded-lg overflow-hidden" />;
+  return <div ref={chartContainerRef} className="w-full h-[320px] rounded-lg overflow-hidden" />;
 }
