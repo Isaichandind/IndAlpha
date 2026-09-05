@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { DeepFinancialsResponse, FinancialStatement } from '../types';
 import api from '../api';
+import { SmartLoader } from './SmartLoader';
 
 interface Props {
   symbol: string;
@@ -32,8 +33,7 @@ export const FinancialsView: React.FC<Props> = ({ symbol }) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64 text-indalpha-muted">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500 mr-3"></div>
-        Fetching comprehensive financials...
+        <SmartLoader message="Fetching comprehensive financials..." rotateIntervalMs={0} />
       </div>
     );
   }

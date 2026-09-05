@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Settings2, Check } from 'lucide-react';
 import type { StockData, SelectedStock } from '../types';
+import { SmartLoader } from './SmartLoader';
 
 interface ScreenerTableProps {
   stocks: StockData[];
@@ -69,10 +70,7 @@ export const ScreenerTable: React.FC<ScreenerTableProps> = ({ stocks, loading, o
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-indalpha-green border-t-transparent rounded-full animate-spin" />
-          <span className="text-indalpha-muted text-sm">Running screener query...</span>
-        </div>
+        <SmartLoader message="Running screener query..." rotateIntervalMs={0} />
       </div>
     );
   }

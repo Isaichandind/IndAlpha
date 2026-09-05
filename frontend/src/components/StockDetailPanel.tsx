@@ -5,6 +5,7 @@ import { StockChart } from './StockChart';
 import { FinancialsView } from './FinancialsView';
 import { HoldingsView } from './HoldingsView';
 import { FundamentalAnalysis } from './FundamentalAnalysis';
+import { SmartLoader } from './SmartLoader';
 import type { CandleData, StockQuote, SelectedStock, FullStockProfile, SectorBenchmarks } from '../types';
 
 interface StockDetailPanelProps {
@@ -230,7 +231,7 @@ export function StockDetailPanel({ stock, onClose }: StockDetailPanelProps) {
             <div className="p-6">
               {profileLoading || !profile ? (
                 <div className="flex items-center justify-center h-64">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indalpha-green"></div>
+                  <SmartLoader message="Loading Profile..." rotateIntervalMs={0} />
                 </div>
               ) : (
                 <div className="space-y-8">

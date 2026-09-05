@@ -6,6 +6,7 @@ import {
   BrainCircuit, ShieldAlert, TrendingUp, BarChart3,
   Activity, Scale, Shield, Factory, FileWarning
 } from 'lucide-react';
+import { SmartLoader } from './SmartLoader';
 
 interface Props {
   symbol: string;
@@ -61,9 +62,7 @@ export const FundamentalAnalysis: React.FC<Props> = ({ symbol }) => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <BrainCircuit className="w-12 h-12 text-indalpha-green animate-pulse mb-4" />
-        <div className="text-indalpha-text text-lg font-medium tracking-wide">AI Engine Analyzing {symbol}...</div>
-        <div className="text-indalpha-muted text-sm mt-2">Computing 6-Dimension Composite Score</div>
+        <SmartLoader message={`AI Engine Analyzing ${symbol}...`} rotateIntervalMs={4000} />
       </div>
     );
   }
