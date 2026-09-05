@@ -209,6 +209,32 @@ def filter_stocks(filters: schemas.ScreenerFilter, db: Session = Depends(get_db)
         data=response
     )
 
+@router.get("/screener/sector-benchmarks")
+def get_sector_benchmarks(sector: str, db: Session = Depends(get_db)):
+    from sqlalchemy.sql import func
+    
+    safe_sector = _escape_like(sector)
+    result = db.query(
+        func.avg(models.Fundamentals.pe_ratio).label('avg_pe'),
+        func.avg(models.Fundamentals.roce).label('avg_roce'),
+        func.avg(models.Fundamentals.roe).label('avg_roe'),
+        func.avg(models.Fundamentals.debt_to_equity).label('avg_de')
+    ).select_from(models.Stock).join(
+        models.Fundamentals, models.Stock.ticker == models.Fundamentals.ticker
+    ).filter(
+        models.Stock.sector.ilike(f"%{safe_sector}%"),
+        models.Fundamentals.pe_ratio > 0, 
+        models.Fundamentals.roce > 0
+    ).first()
+    
+    return {
+        "sector": sector,
+        "avg_pe": round(result.avg_pe, 2) if result and result.avg_pe else 0.0,
+        "avg_roce": round(result.avg_roce, 2) if result and result.avg_roce else 0.0,
+        "avg_roe": round(result.avg_roe, 2) if result and result.avg_roe else 0.0,
+        "avg_de": round(result.avg_de, 2) if result and result.avg_de else 0.0,
+    }
+
 @router.post("/screener/sync")
 def sync_market_data(db: Session = Depends(get_db)):
     stocks = db.query(models.Stock).all()

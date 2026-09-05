@@ -5,7 +5,7 @@ import { StockChart } from './StockChart';
 import { FinancialsView } from './FinancialsView';
 import { HoldingsView } from './HoldingsView';
 import { FundamentalAnalysis } from './FundamentalAnalysis';
-import type { CandleData, StockQuote, SelectedStock, FullStockProfile } from '../types';
+import type { CandleData, StockQuote, SelectedStock, FullStockProfile, SectorBenchmarks } from '../types';
 
 interface StockDetailPanelProps {
   stock: SelectedStock | null;
@@ -29,10 +29,9 @@ export function StockDetailPanel({ stock, onClose }: StockDetailPanelProps) {
   const [candles, setCandles] = useState<CandleData[]>([]);
   const [quote, setQuote] = useState<StockQuote | null>(null);
   const [profile, setProfile] = useState<FullStockProfile | null>(null);
+  const [benchmarks, setBenchmarks] = useState<SectorBenchmarks | null>(null);
   const [chartLoading, setChartLoading] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
-
-
 
   useEffect(() => {
     if (!stock) return;
@@ -42,6 +41,7 @@ export function StockDetailPanel({ stock, onClose }: StockDetailPanelProps) {
     // Clear previous stock's data
     setQuote(null);
     setProfile(null);
+    setBenchmarks(null);
     
     const fetchQuote = async () => {
       try {
@@ -56,7 +56,19 @@ export function StockDetailPanel({ stock, onClose }: StockDetailPanelProps) {
       setProfileLoading(true);
       try {
         const res = await axios.get(`/stock/${stock.symbol}`);
-        if (isMounted) setProfile(res.data);
+        if (isMounted) {
+          setProfile(res.data);
+          if (res.data.sector && res.data.sector !== 'Unknown') {
+            try {
+              const benchRes = await axios.get(`/screener/sector-benchmarks`, {
+                params: { sector: res.data.sector }
+              });
+              setBenchmarks(benchRes.data);
+            } catch (e) {
+              console.error(e);
+            }
+          }
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -222,74 +234,165 @@ export function StockDetailPanel({ stock, onClose }: StockDetailPanelProps) {
                 </div>
               ) : (
                 <div className="space-y-8">
-                  {/* Key Metrics */}
+                  {/* Valuation Models */}
                   <section>
                     <h3 className="text-sm font-bold text-indalpha-text uppercase tracking-wider mb-4 flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-indalpha-blue" />
-                      Key Fundamentals
+                      <BrainCircuit className="w-4 h-4 text-indalpha-green" />
+                      Valuation Models & Margin of Safety
                     </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {(() => {
+                        const fund = profile.fundamentals || {} as any;
+                        const eps = fund.eps || 0;
+                        const bv = fund.book_value || 0;
+                        let grahamNumber = 0;
+                        if (eps > 0 && bv > 0) {
+                          grahamNumber = Math.sqrt(22.5 * eps * bv);
+                        }
+                        const marginOfSafety = quote && grahamNumber > 0 ? ((grahamNumber - quote.ltp) / grahamNumber * 100) : 0;
+                        const earningsYield = fund.pe_ratio > 0 ? (1 / fund.pe_ratio) * 100 : 0;
+                        
+                        return (
+                          <>
+                            <MetricCard 
+                              title="Graham Number (Fair Value)" 
+                              value={grahamNumber > 0 ? `₹${grahamNumber.toFixed(2)}` : 'N/A'} 
+                              subtitle="Defensive Intrinsic Value"
+                              good={quote ? quote.ltp < grahamNumber : undefined}
+                            />
+                            <MetricCard 
+                              title="Margin of Safety" 
+                              value={grahamNumber > 0 ? `${marginOfSafety.toFixed(2)}%` : 'N/A'} 
+                              subtitle="Discount to Graham Number"
+                              good={marginOfSafety > 0}
+                            />
+                            <MetricCard 
+                              title="Earnings Yield" 
+                              value={earningsYield > 0 ? `${earningsYield.toFixed(2)}%` : 'N/A'} 
+                              subtitle="vs Risk-Free Rate (~7%)"
+                              good={earningsYield > 7}
+                            />
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </section>
+                  
+                  <div className="h-px bg-indalpha-card w-full" />
+
+                  {/* Institutional Health Scores */}
+                  <section>
+                    <h3 className="text-sm font-bold text-indalpha-text uppercase tracking-wider mb-4 flex items-center gap-2">
+                      <PieChartIcon className="w-4 h-4 text-indalpha-purple" />
+                      Institutional Health Scores
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      {(() => {
+                        const fund = profile.fundamentals || {} as any;
+                        // Piotroski Proxy (Out of 5 based on available DB metrics)
+                        let piotroski = 0;
+                        if (fund.roce > 0) piotroski++; // Cashflow proxy
+                        if (fund.roe > 0) piotroski++; // Profitability proxy
+                        if (fund.debt_to_equity < 1) piotroski++; // Leverage proxy
+                        if (fund.eps > 0) piotroski++; // Earnings quality
+                        if (fund.roce > 15) piotroski++; // Efficiency
+                        
+                        // Altman Z-Score Proxy (Safe/Grey/Distressed)
+                        let altmanStatus = "GREY ZONE";
+                        let altmanColor = "text-yellow-500";
+                        if (fund.debt_to_equity > 2 && fund.roce < 5) {
+                          altmanStatus = "DISTRESSED (High Risk)";
+                          altmanColor = "text-indalpha-red";
+                        } else if (fund.debt_to_equity < 0.5 && fund.roce > 15) {
+                          altmanStatus = "SAFE ZONE (Low Risk)";
+                          altmanColor = "text-indalpha-green";
+                        }
+
+                        return (
+                          <>
+                            <div className="bg-indalpha-card rounded-xl p-4 border border-indalpha-border shadow-sm">
+                              <div className="text-xs text-indalpha-muted font-bold uppercase tracking-wider mb-2">Piotroski F-Score Proxy</div>
+                              <div className="flex items-end gap-2">
+                                <div className={`text-2xl font-bold font-mono ${piotroski >= 4 ? 'text-indalpha-green' : piotroski <= 2 ? 'text-indalpha-red' : 'text-yellow-500'}`}>
+                                  {piotroski} <span className="text-sm text-indalpha-muted">/ 5</span>
+                                </div>
+                              </div>
+                              <div className="text-[10px] text-indalpha-muted font-medium mt-1">Evaluates Profitability & Leverage</div>
+                            </div>
+                            
+                            <div className="bg-indalpha-card rounded-xl p-4 border border-indalpha-border shadow-sm">
+                              <div className="text-xs text-indalpha-muted font-bold uppercase tracking-wider mb-2">Altman Z-Score Proxy</div>
+                              <div className={`text-lg font-bold uppercase ${altmanColor}`}>
+                                {altmanStatus}
+                              </div>
+                              <div className="text-[10px] text-indalpha-muted font-medium mt-1">Bankruptcy Risk Assessment</div>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </section>
+
+                  <div className="h-px bg-indalpha-card w-full" />
+
+                  {/* Sector Benchmarking */}
+                  <section>
+                    <h3 className="text-sm font-bold text-indalpha-text uppercase tracking-wider mb-4 flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4 text-indalpha-blue" />
+                      Fundamentals vs Sector {benchmarks ? `(${benchmarks.sector})` : ''}
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                       {(() => {
                         const fund = profile.fundamentals || {} as any;
                         return (
                           <>
-                            <MetricCard 
+                            <BenchmarkCard 
                               title="P/E Ratio" 
-                              value={fund.pe_ratio > 0 ? fund.pe_ratio.toFixed(2) : 'N/A'} 
-                              subtitle="Price to Earnings"
-                              good={fund.pe_ratio > 0 && fund.pe_ratio < 30}
+                              value={fund.pe_ratio} 
+                              sectorValue={benchmarks?.avg_pe || 0}
+                              good={benchmarks ? (fund.pe_ratio > 0 && fund.pe_ratio < benchmarks.avg_pe) : (fund.pe_ratio > 0 && fund.pe_ratio < 30)}
                             />
-                            <MetricCard 
+                            <BenchmarkCard 
                               title="ROCE" 
-                              value={fund.roce !== undefined ? `${fund.roce.toFixed(2)}%` : 'N/A'} 
-                              subtitle="Return on Capital Emp"
-                              good={fund.roce > 15}
+                              value={fund.roce} 
+                              sectorValue={benchmarks?.avg_roce || 0}
+                              suffix="%"
+                              good={benchmarks ? fund.roce > benchmarks.avg_roce : fund.roce > 15}
                             />
-                            <MetricCard 
+                            <BenchmarkCard 
                               title="ROE" 
-                              value={fund.roe !== undefined ? `${fund.roe.toFixed(2)}%` : 'N/A'} 
-                              subtitle="Return on Equity"
-                              good={fund.roe > 15}
+                              value={fund.roe} 
+                              sectorValue={benchmarks?.avg_roe || 0}
+                              suffix="%"
+                              good={benchmarks ? fund.roe > benchmarks.avg_roe : fund.roe > 15}
                             />
-                            <MetricCard 
+                            <BenchmarkCard 
                               title="Debt to Equity" 
-                              value={fund.debt_to_equity !== undefined ? fund.debt_to_equity.toFixed(2) : 'N/A'} 
-                              subtitle="Leverage Ratio"
-                              good={fund.debt_to_equity !== undefined && fund.debt_to_equity < 1}
+                              value={fund.debt_to_equity} 
+                              sectorValue={benchmarks?.avg_de || 0}
+                              good={benchmarks ? fund.debt_to_equity < benchmarks.avg_de : fund.debt_to_equity < 1}
                             />
-                            <MetricCard 
-                              title="EPS" 
-                              value={fund.eps !== undefined ? `₹${fund.eps.toFixed(2)}` : 'N/A'} 
-                              subtitle="Earnings per Share"
-                              good={fund.eps > 0}
-                            />
-                            <MetricCard 
-                              title="Div Yield" 
-                              value={fund.dividend_yield > 0 ? `${fund.dividend_yield.toFixed(2)}%` : '-'} 
-                              subtitle="Dividend Yield"
-                              good={fund.dividend_yield > 1}
-                            />
-                            <MetricCard 
-                              title="Book Value" 
-                              value={fund.book_value > 0 ? `₹${fund.book_value.toFixed(2)}` : '-'} 
-                              subtitle="Book Value"
-                            />
-                            <MetricCard 
-                              title="P/B Ratio" 
-                              value={fund.pb_ratio > 0 ? fund.pb_ratio.toFixed(2) : '-'} 
-                              subtitle="Price to Book"
-                              good={fund.pb_ratio > 0 && fund.pb_ratio < 3}
-                            />
-                            <MetricCard 
-                              title="Market Cap" 
-                              value={profile.market_cap > 0 ? `₹${profile.market_cap.toLocaleString('en-IN', {maximumFractionDigits: 0})} Cr` : 'N/A'} 
-                              subtitle="Company Size"
-                            />
-                            <MetricCard 
-                              title="Sector" 
-                              value={profile.sector || 'N/A'} 
-                              subtitle="Industry"
-                            />
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </section>
+
+                  {/* Other Core Metrics */}
+                  <section>
+                     <h3 className="text-sm font-bold text-indalpha-text uppercase tracking-wider mb-4 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-indalpha-muted" />
+                      Core Ratios
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      {(() => {
+                        const fund = profile.fundamentals || {} as any;
+                        return (
+                          <>
+                            <MetricCard title="EPS" value={fund.eps !== undefined ? `₹${fund.eps.toFixed(2)}` : 'N/A'} subtitle="Earnings per Share" good={fund.eps > 0} />
+                            <MetricCard title="Div Yield" value={fund.dividend_yield > 0 ? `${fund.dividend_yield.toFixed(2)}%` : '-'} subtitle="Dividend Yield" good={fund.dividend_yield > 1} />
+                            <MetricCard title="Book Value" value={fund.book_value > 0 ? `₹${fund.book_value.toFixed(2)}` : '-'} subtitle="Book Value" />
+                            <MetricCard title="P/B Ratio" value={fund.pb_ratio > 0 ? fund.pb_ratio.toFixed(2) : '-'} subtitle="Price to Book" good={fund.pb_ratio > 0 && fund.pb_ratio < 3} />
                           </>
                         );
                       })()}
@@ -301,7 +404,7 @@ export function StockDetailPanel({ stock, onClose }: StockDetailPanelProps) {
                   {/* Technicals */}
                   <section>
                     <h3 className="text-sm font-bold text-indalpha-text uppercase tracking-wider mb-4 flex items-center gap-2">
-                      <BarChart3 className="w-4 h-4 text-indalpha-purple" />
+                      <TrendingUp className="w-4 h-4 text-indalpha-purple" />
                       Technical Indicators (1D)
                     </h3>
                     <div className="bg-indalpha-card rounded-xl p-5 border border-indalpha-border space-y-5 shadow-lg">
@@ -407,6 +510,30 @@ function MetricCard({ title, value, subtitle, good }: { title: string; value: st
         good === true ? 'text-indalpha-green' : good === false ? 'text-indalpha-text' : 'text-indalpha-text'
       }`}>{value}</div>
       <div className="text-[10px] text-indalpha-muted font-medium">{subtitle}</div>
+    </div>
+  );
+}
+
+function BenchmarkCard({ title, value, sectorValue, suffix = '', good }: { title: string; value: number; sectorValue: number; suffix?: string; good?: boolean }) {
+  const isBetter = good !== undefined ? good : value > sectorValue;
+  return (
+    <div className="bg-indalpha-card rounded-xl p-4 border border-indalpha-border shadow-sm group">
+      <div className="text-xs text-indalpha-muted font-bold uppercase tracking-wider mb-1">{title}</div>
+      <div className="flex items-end gap-2 mb-1">
+        <div className={`text-xl font-bold font-mono ${isBetter ? 'text-indalpha-green' : 'text-indalpha-text'}`}>
+          {value > 0 ? value.toFixed(2) : 'N/A'}{suffix}
+        </div>
+        {sectorValue > 0 && (
+          <div className="text-xs font-mono text-indalpha-muted mb-1">
+            vs {sectorValue.toFixed(2)}{suffix} (Sec)
+          </div>
+        )}
+      </div>
+      {sectorValue > 0 && (
+        <div className="text-[10px] text-indalpha-muted font-medium">
+          {isBetter ? 'Outperforming Sector' : 'Underperforming Sector'}
+        </div>
+      )}
     </div>
   );
 }

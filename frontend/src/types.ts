@@ -245,3 +245,12 @@ export interface FundamentalAnalysisResponse {
   cons_and_risks: string[];
   final_rationale: string;
 }
+
+export interface SectorBenchmarks {
+  sector: string;
+  avg_pe: number;
+  avg_roce: number;
+  avg_roe: number;
+  avg_de: number;
+}
+
