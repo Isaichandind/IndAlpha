@@ -198,7 +198,7 @@ def fix_missing_market_caps(db: Session, batch_size: int = 50) -> int:
                 for stock in batch:
                     d = details.get(stock.ticker)
                     if isinstance(d, dict):
-                        mcap = d.get('marketCap')
+                        mcap = d.get('marketCap') or d.get('nonDilutedMarketCap')
                         if mcap and mcap > 0:
                             stock.market_cap = mcap / 10000000  # Convert to Crores
                             updated_mcaps += 1

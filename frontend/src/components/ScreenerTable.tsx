@@ -25,7 +25,7 @@ const AlphaGauge = ({ score }: { score: number }) => {
   );
 };
 
-type ColumnKey = 'rank' | 'ticker' | 'ltp' | 'mcap' | 'alpha' | 'roce' | 'pe' | 'de' | 'ph' | 'pledge' | 'delivery' | 'eps' | 'div' | 'pb' | 'bv' | 'tag';
+type ColumnKey = 'rank' | 'ticker' | 'ltp' | 'mcap' | 'alpha' | 'roce' | 'pe' | 'de' | 'ph' | 'delivery' | 'eps' | 'div' | 'pb' | 'bv' | 'tag';
 
 const ALL_COLUMNS: { key: ColumnKey; label: string; defaultVisible: boolean }[] = [
   { key: 'rank', label: 'Rank', defaultVisible: true },
@@ -35,12 +35,11 @@ const ALL_COLUMNS: { key: ColumnKey; label: string; defaultVisible: boolean }[] 
   { key: 'alpha', label: 'Alpha Score', defaultVisible: true },
   { key: 'roce', label: 'ROCE / ROE', defaultVisible: true },
   { key: 'pe', label: 'P/E Ratio', defaultVisible: false },
-  { key: 'eps', label: 'EPS', defaultVisible: false },
   { key: 'pb', label: 'P/B Ratio', defaultVisible: false },
+  { key: 'eps', label: 'EPS', defaultVisible: false },
   { key: 'div', label: 'Div Yield', defaultVisible: false },
   { key: 'de', label: 'Debt/Equity', defaultVisible: false },
   { key: 'ph', label: 'Promoter %', defaultVisible: true },
-  { key: 'pledge', label: 'Pledge %', defaultVisible: false },
   { key: 'delivery', label: 'Delivery Vol %', defaultVisible: true },
   { key: 'bv', label: 'Book Value', defaultVisible: false },
   { key: 'tag', label: 'Tag', defaultVisible: false },
@@ -193,8 +192,6 @@ export const ScreenerTable: React.FC<ScreenerTableProps> = ({ stocks, loading, o
                 {visibleColumns.has('div') && <td className="px-6 py-4 text-indalpha-text font-mono">{stock.dividend_yield > 0 ? `${stock.dividend_yield.toFixed(2)}%` : '-'}</td>}
                 {visibleColumns.has('de') && <td className="px-6 py-4 text-indalpha-text font-mono">{stock.debt_to_equity.toFixed(2)}</td>}
                 {visibleColumns.has('ph') && <td className="px-6 py-4 text-indalpha-text font-mono">{stock.promoter_holding.toFixed(2)}%</td>}
-                
-                {visibleColumns.has('pledge') && <td className="px-6 py-4 text-indalpha-text">{stock.pledged_promoter}%</td>}
                 
                 {visibleColumns.has('delivery') && (
                   <td className="px-6 py-4">
