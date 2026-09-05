@@ -666,8 +666,17 @@ def _safe_float(val, default=0.0):
         return default
 
 @router.get("/stock/{symbol}/about")
-def get_stock_about(symbol: str):
+def get_stock_about(symbol: str, db: Session = Depends(get_db)):
     """Fetch company profile, website, and business summary from yfinance."""
+    # Resolve symbol to get .NS or .BO suffix if missing
+    stock = db.query(models.Stock).filter(models.Stock.ticker == symbol).first()
+    if not stock and not symbol.endswith('.NS') and not symbol.endswith('.BO'):
+        stock = db.query(models.Stock).filter(
+            (models.Stock.ticker == f"{symbol}.NS") | (models.Stock.ticker == f"{symbol}.BO")
+        ).first()
+    if stock:
+        symbol = stock.ticker
+
     try:
         ticker = yf.Ticker(symbol)
         info = ticker.info
@@ -696,8 +705,17 @@ def get_stock_about(symbol: str):
         }
 
 @router.get("/stock/{symbol}/quote")
-def get_stock_quote(symbol: str):
+def get_stock_quote(symbol: str, db: Session = Depends(get_db)):
     """Fetch real-time quote data for a stock."""
+    # Resolve symbol to get .NS or .BO suffix if missing
+    stock = db.query(models.Stock).filter(models.Stock.ticker == symbol).first()
+    if not stock and not symbol.endswith('.NS') and not symbol.endswith('.BO'):
+        stock = db.query(models.Stock).filter(
+            (models.Stock.ticker == f"{symbol}.NS") | (models.Stock.ticker == f"{symbol}.BO")
+        ).first()
+    if stock:
+        symbol = stock.ticker
+
     try:
         ticker = yf.Ticker(symbol)
         info = ticker.fast_info
