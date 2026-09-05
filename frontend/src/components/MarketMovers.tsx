@@ -22,9 +22,9 @@ export const MarketMovers: React.FC<MarketMoversProps> = ({ data, loading, onDat
     );
   }
 
-  // Take top 5 for cleaner UI
-  const topGainers = data.gainers.slice(0, 5);
-  const topLosers = data.losers.slice(0, 5);
+  // Take top 3 for a compact UI
+  const topGainers = data.gainers.slice(0, 3);
+  const topLosers = data.losers.slice(0, 3);
 
   return (
     <div className="w-full bg-indalpha-dark border-b border-indalpha-border p-4 lg:p-6 shrink-0">
@@ -43,9 +43,9 @@ export const MarketMovers: React.FC<MarketMoversProps> = ({ data, loading, onDat
                 value={selectedDate || ''}
                 onChange={(e) => onDateSelect(e.target.value)}
               >
-                <option value="">Live / Today</option>
+                <option value="" className="bg-indalpha-card text-indalpha-text">Live / Today</option>
                 {tradingDates.map(d => (
-                  <option key={d} value={d}>{new Date(d).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}</option>
+                  <option key={d} value={d} className="bg-indalpha-card text-indalpha-text">{new Date(d).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}</option>
                 ))}
               </select>
             </div>
@@ -58,54 +58,52 @@ export const MarketMovers: React.FC<MarketMoversProps> = ({ data, loading, onDat
         
         {/* Top Gainers */}
         <div className="bg-indalpha-card/30 rounded-lg border border-indalpha-green/20 overflow-hidden">
-          <div className="flex items-center gap-2 px-4 py-2 border-b border-indalpha-green/20 bg-indalpha-green/10">
-            <TrendingUp size={16} className="text-indalpha-green" />
-            <h3 className="text-xs font-semibold text-indalpha-green tracking-wide">TOP GAINERS</h3>
+          <div className="flex items-center gap-2 px-3 py-1.5 border-b border-indalpha-green/20 bg-indalpha-green/10">
+            <TrendingUp size={14} className="text-indalpha-green" />
+            <h3 className="text-[10px] font-semibold text-indalpha-green tracking-wide">TOP GAINERS</h3>
           </div>
-          <div className="divide-y divide-indalpha-border/50">
+          <div className="grid grid-cols-3 divide-x divide-indalpha-border/50">
             {topGainers.map((stock) => (
-              <div key={stock.symbol} className="flex items-center justify-between px-4 py-2 hover:bg-white/5 transition-colors cursor-pointer group">
-                <span className="font-bold text-indalpha-text text-sm group-hover:text-indalpha-green transition-colors">
+              <div key={stock.symbol} className="flex flex-col items-center justify-center p-2 hover:bg-white/5 transition-colors cursor-pointer group">
+                <span className="font-bold text-indalpha-text text-[11px] group-hover:text-indalpha-green transition-colors truncate w-full text-center">
                   {stock.symbol.replace('.NS', '')}
                 </span>
-                <div className="flex items-center gap-4 text-sm font-mono">
-                  <span className="text-indalpha-muted">₹{stock.ltp.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  <span className="flex items-center text-indalpha-green font-semibold bg-indalpha-green/10 px-2 py-0.5 rounded">
-                    <ArrowUpRight className="w-3 h-3 mr-1" />
-                    +{stock.change_pct.toFixed(2)}%
+                <div className="flex items-center justify-center gap-1.5 text-[11px] font-mono mt-1">
+                  <span className="text-indalpha-muted">₹{stock.ltp.toLocaleString('en-IN', { maximumFractionDigits: 1 })}</span>
+                  <span className="text-indalpha-green font-semibold">
+                    +{stock.change_pct.toFixed(1)}%
                   </span>
                 </div>
               </div>
             ))}
             {topGainers.length === 0 && (
-              <div className="px-4 py-3 text-xs text-indalpha-muted text-center italic">No gainers found for this period.</div>
+              <div className="col-span-3 p-2 text-xs text-indalpha-muted text-center italic">No gainers found.</div>
             )}
           </div>
         </div>
 
         {/* Top Losers */}
         <div className="bg-indalpha-card/30 rounded-lg border border-indalpha-red/20 overflow-hidden">
-          <div className="flex items-center gap-2 px-4 py-2 border-b border-indalpha-red/20 bg-indalpha-red/10">
-            <TrendingDown size={16} className="text-indalpha-red" />
-            <h3 className="text-xs font-semibold text-indalpha-red tracking-wide">TOP LOSERS</h3>
+          <div className="flex items-center gap-2 px-3 py-1.5 border-b border-indalpha-red/20 bg-indalpha-red/10">
+            <TrendingDown size={14} className="text-indalpha-red" />
+            <h3 className="text-[10px] font-semibold text-indalpha-red tracking-wide">TOP LOSERS</h3>
           </div>
-          <div className="divide-y divide-indalpha-border/50">
+          <div className="grid grid-cols-3 divide-x divide-indalpha-border/50">
             {topLosers.map((stock) => (
-              <div key={stock.symbol} className="flex items-center justify-between px-4 py-2 hover:bg-white/5 transition-colors cursor-pointer group">
-                <span className="font-bold text-indalpha-text text-sm group-hover:text-indalpha-red transition-colors">
+              <div key={stock.symbol} className="flex flex-col items-center justify-center p-2 hover:bg-white/5 transition-colors cursor-pointer group">
+                <span className="font-bold text-indalpha-text text-[11px] group-hover:text-indalpha-red transition-colors truncate w-full text-center">
                   {stock.symbol.replace('.NS', '')}
                 </span>
-                <div className="flex items-center gap-4 text-sm font-mono">
-                  <span className="text-indalpha-muted">₹{stock.ltp.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  <span className="flex items-center text-indalpha-red font-semibold bg-indalpha-red/10 px-2 py-0.5 rounded">
-                    <ArrowDownRight className="w-3 h-3 mr-1" />
-                    {stock.change_pct.toFixed(2)}%
+                <div className="flex items-center justify-center gap-1.5 text-[11px] font-mono mt-1">
+                  <span className="text-indalpha-muted">₹{stock.ltp.toLocaleString('en-IN', { maximumFractionDigits: 1 })}</span>
+                  <span className="text-indalpha-red font-semibold">
+                    {stock.change_pct.toFixed(1)}%
                   </span>
                 </div>
               </div>
             ))}
             {topLosers.length === 0 && (
-              <div className="px-4 py-3 text-xs text-indalpha-muted text-center italic">No losers found for this period.</div>
+              <div className="col-span-3 p-2 text-xs text-indalpha-muted text-center italic">No losers found.</div>
             )}
           </div>
         </div>
