@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from './api';
-import { Save, Bell, RefreshCw, Settings, Menu, List, X } from 'lucide-react';
+import { Save, Bell, RefreshCw, Settings, Menu, List, X, Search } from 'lucide-react';
 import { SettingsModal } from './components/SettingsModal';
 import { ScreenerTable } from './components/ScreenerTable';
 import { FilterSidebar } from './components/FilterSidebar';
@@ -30,6 +30,7 @@ function App() {
   const [loading, setLoading] = useState<boolean>(true);
   const [syncing, setSyncing] = useState<boolean>(false);
   const [filters, setFilters] = useState<ScreenerFilters>({});
+  const [tableSearchQuery, setTableSearchQuery] = useState('');
   
   const [watchlists, setWatchlists] = useState<Watchlist[]>([]);
   const [activeWatchlistId, setActiveWatchlistId] = useState<number | null>(null);
@@ -251,6 +252,11 @@ function App() {
     setStocks(results);
   };
 
+  const filteredTableStocks = stocks.filter(s => 
+    s.ticker.toLowerCase().includes(tableSearchQuery.toLowerCase()) || 
+    (s.company_name && s.company_name.toLowerCase().includes(tableSearchQuery.toLowerCase()))
+  );
+
   if (!isUnlocked) {
     return (
       <LockScreen onUnlock={() => {
@@ -396,21 +402,41 @@ function App() {
           </div>
           
           <div className="flex-1 p-4 pt-4 overflow-y-auto custom-scrollbar">
-            <div className="flex justify-between items-center mb-4">
-              <h1 className="text-lg font-semibold text-indalpha-text">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+              <h1 className="text-lg font-semibold text-indalpha-text flex items-center">
                 Screener Output 
                 <span className="text-xs font-normal text-indalpha-green ml-2 border border-indalpha-green/30 bg-indalpha-green/10 px-2 py-0.5 rounded">
-                  {stocks.length} stocks
+                  {filteredTableStocks.length} stocks
                 </span>
               </h1>
-              <div className="flex gap-2">
-                <button className="text-[11px] text-indalpha-muted hover:text-indalpha-text border border-indalpha-border rounded px-2.5 py-1 flex items-center gap-1.5 hover:bg-indalpha-card transition-colors">
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <div className="relative flex-1 sm:w-64">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-4 w-4 text-indalpha-muted" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search in table..."
+                    value={tableSearchQuery}
+                    onChange={(e) => setTableSearchQuery(e.target.value)}
+                    className="block w-full pl-9 pr-8 py-1.5 border border-indalpha-border rounded-full leading-5 bg-indalpha-card text-indalpha-text placeholder-indalpha-muted focus:outline-none focus:ring-1 focus:ring-indalpha-green focus:border-indalpha-green sm:text-sm transition-colors shadow-sm"
+                  />
+                  {tableSearchQuery && (
+                    <button 
+                      onClick={() => setTableSearchQuery('')}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-indalpha-muted hover:text-indalpha-text transition-colors"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+                <button className="shrink-0 text-[11px] font-medium text-indalpha-muted hover:text-indalpha-text border border-indalpha-border rounded px-3 py-1.5 flex items-center gap-1.5 hover:bg-indalpha-card transition-colors">
                   Export CSV
                 </button>
               </div>
             </div>
             
-            <ScreenerTable stocks={stocks} loading={loading} onSelectStock={handleViewChart} />
+            <ScreenerTable stocks={filteredTableStocks} loading={loading} onSelectStock={handleViewChart} />
           </div>
         </div>
         
