@@ -60,12 +60,13 @@ if frontend_url:
     origins = [frontend_url]
     allow_credentials = True
 elif is_production:
-    # Production without FRONTEND_URL is a misconfiguration — lock down
-    origins = ["https://indalpha.vercel.app"]
+    # Production without FRONTEND_URL is a misconfiguration — lock down to GitHub Pages
+    origins = ["https://isaichandind.github.io"]
     allow_credentials = True
 else:
     # Local development — allow all origins but WITHOUT credentials
-    origins = ["*"]
+    # Also explicitly add the github pages URL just in case testing against local/render
+    origins = ["*", "https://isaichandind.github.io"]
     allow_credentials = False
 
 app.add_middleware(
