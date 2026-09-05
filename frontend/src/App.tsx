@@ -30,7 +30,12 @@ function App() {
   const [indices, setIndices] = useState<IndexData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [syncing, setSyncing] = useState<boolean>(false);
-  const [filters, setFilters] = useState<ScreenerFilters>({ page: 1, limit: 50 });
+  const [filters, setFilters] = useState<ScreenerFilters>({ 
+    page: 1, 
+    limit: 50,
+    sort_by: 'alpha',
+    sort_order: 'desc'
+  });
   const [totalPages, setTotalPages] = useState<number>(1);
   const [totalStocksCount, setTotalStocksCount] = useState<number>(0);
   const [tableSearchQuery, setTableSearchQuery] = useState('');
@@ -413,7 +418,13 @@ function App() {
           <MarketMovers 
             data={moversData} 
             loading={moversLoading} 
-            onDateSelect={(date) => setFilters(prev => ({ ...prev, performance_date: date }))}
+            onDateSelect={(date) => setFilters(prev => ({ 
+              ...prev, 
+              performance_date: date,
+              sort_by: date ? 'change_pct' : 'alpha',
+              sort_order: 'desc',
+              page: 1
+            }))}
             selectedDate={filters.performance_date}
             tradingDates={tradingDates}
           />
