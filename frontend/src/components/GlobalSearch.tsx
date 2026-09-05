@@ -25,7 +25,7 @@ export function GlobalSearch({ onAddStock, onViewChart }: GlobalSearchProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
-  const API_URL = '';
+
 
   // Global Ctrl+K hotkey
   useEffect(() => {
@@ -69,7 +69,7 @@ export function GlobalSearch({ onAddStock, onViewChart }: GlobalSearchProps) {
   const fetchResults = async (searchQuery: string) => {
     setIsLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/screener/search`, {
+      const res = await axios.get('/screener/search', {
         params: { q: searchQuery }
       });
       setResults(res.data);

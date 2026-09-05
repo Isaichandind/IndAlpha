@@ -50,7 +50,7 @@ function App() {
     return sessionStorage.getItem('app_unlocked') === 'true';
   });
 
-  const API_URL = '';
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -60,7 +60,6 @@ function App() {
 
     fetchIndices();
     fetchTradingDates();
-    fetchMovers();
 
     const handleOpenSettings = () => setIsSettingsOpen(true);
     document.addEventListener('open-settings', handleOpenSettings);
@@ -83,9 +82,14 @@ function App() {
 
   useEffect(() => {
     fetchStocks();
-    fetchMovers();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
+
+  // Only refetch movers when performance_date changes, not on every filter tweak
+  useEffect(() => {
+    fetchMovers();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.performance_date]);
 
   useEffect(() => {
     if (activeWatchlistId !== null) {
@@ -97,7 +101,7 @@ function App() {
 
   const fetchWatchlists = async () => {
     try {
-      const res = await axios.get(`${API_URL}/watchlists`);
+      const res = await axios.get('/watchlists');
       setWatchlists(res.data);
       if (res.data.length > 0 && activeWatchlistId === null) {
         setActiveWatchlistId(res.data[0].id);
@@ -109,7 +113,7 @@ function App() {
 
   const fetchWatchlistLivePrices = async (id: number) => {
     try {
-      const res = await axios.get(`${API_URL}/watchlists/${id}/live`);
+      const res = await axios.get(`/watchlists/${id}/live`);
       setWatchlists(prev => prev.map(w => {
         if (w.id === id) {
           return { ...w, items: res.data };
@@ -123,7 +127,7 @@ function App() {
 
   const handleCreateWatchlist = async (name: string) => {
     try {
-      const res = await axios.post(`${API_URL}/watchlists`, { name });
+      const res = await axios.post('/watchlists', { name });
       setWatchlists([...watchlists, res.data]);
       setActiveWatchlistId(res.data.id);
     } catch (err) {
@@ -133,7 +137,7 @@ function App() {
 
   const handleDeleteWatchlist = async (id: number) => {
     try {
-      await axios.delete(`${API_URL}/watchlists/${id}`);
+      await axios.delete(`/watchlists/${id}`);
       const updated = watchlists.filter(w => w.id !== id);
       setWatchlists(updated);
       if (updated.length > 0) {
@@ -156,7 +160,7 @@ function App() {
       return;
     }
     try {
-      await axios.post(`${API_URL}/watchlists/${activeWatchlistId}/items`, {
+      await axios.post(`/watchlists/${activeWatchlistId}/items`, {
         symbol: stock.symbol,
         name: stock.name,
         exchange: stock.exchange
@@ -174,7 +178,7 @@ function App() {
   const handleRemoveStock = async (symbol: string) => {
     if (!activeWatchlistId) return;
     try {
-      await axios.delete(`${API_URL}/watchlists/${activeWatchlistId}/items/${symbol}`);
+      await axios.delete(`/watchlists/${activeWatchlistId}/items/${symbol}`);
       setWatchlists(prev => prev.map(w => {
         if (w.id === activeWatchlistId) {
           return { ...w, items: w.items.filter(i => i.symbol !== symbol) };
@@ -188,7 +192,7 @@ function App() {
 
   const fetchIndices = async () => {
     try {
-      const res = await axios.get(`${API_URL}/market/indices`);
+      const res = await axios.get('/market/indices');
       setIndices(res.data);
     } catch (err) {
       console.error(err);
@@ -197,7 +201,7 @@ function App() {
 
   const fetchTradingDates = async () => {
     try {
-      const res = await axios.get(`${API_URL}/market/trading-dates`);
+      const res = await axios.get('/market/trading-dates');
       setTradingDates(res.data);
     } catch (err) {
       console.error(err);
@@ -208,8 +212,8 @@ function App() {
     setMoversLoading(true);
     try {
       const url = filters.performance_date 
-        ? `${API_URL}/market/movers?date=${filters.performance_date}` 
-        : `${API_URL}/market/movers`;
+        ? `/market/movers?date=${filters.performance_date}` 
+        : '/market/movers';
       const res = await axios.get(url);
       setMoversData(res.data);
     } catch (err) {
@@ -222,7 +226,7 @@ function App() {
   const fetchStocks = async () => {
     setLoading(true);
     try {
-      const res = await axios.post(`${API_URL}/screener/filter`, filters);
+      const res = await axios.post('/screener/filter', filters);
       setStocks(res.data);
     } catch (err) {
       console.error(err);
@@ -234,7 +238,7 @@ function App() {
   const syncMarketData = async () => {
     setSyncing(true);
     try {
-      await axios.post(`${API_URL}/screener/sync`);
+      await axios.post('/screener/sync');
       await fetchIndices();
       await fetchStocks();
     } catch (err) {

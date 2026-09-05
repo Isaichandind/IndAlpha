@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { createChart, ColorType, CandlestickSeries, HistogramSeries } from 'lightweight-charts';
 import type { CandleData } from '../types';
 
@@ -8,21 +8,62 @@ interface StockChartProps {
   symbol: string;
 }
 
+/**
+ * Sanitizes, deduplicates, and sorts candle data for lightweight-charts.
+ * Handles the backend returning mixed time types (string for daily, number for intraday).
+ */
+function sanitizeCandles(raw: CandleData[]) {
+  if (!raw || raw.length === 0) return [];
+
+  const seen = new Set<string | number>();
+  const cleaned: { time: string | number; open: number; high: number; low: number; close: number; volume: number }[] = [];
+
+  for (const c of raw) {
+    // Skip invalid entries
+    if (c.time == null || c.close == null || isNaN(c.close)) continue;
+
+    // Normalize: keep string dates as-is, coerce numeric timestamps to integers
+    const timeKey = typeof c.time === 'number' ? Math.floor(c.time) : c.time;
+
+    if (seen.has(timeKey)) continue;
+    seen.add(timeKey);
+
+    cleaned.push({
+      time: timeKey,
+      open: Number(c.open) || 0,
+      high: Number(c.high) || 0,
+      low: Number(c.low) || 0,
+      close: Number(c.close) || 0,
+      volume: Number(c.volume) || 0,
+    });
+  }
+
+  // Sort ascending — works for both 'YYYY-MM-DD' strings and UNIX timestamps
+  cleaned.sort((a, b) => {
+    if (typeof a.time === 'string' && typeof b.time === 'string') return a.time.localeCompare(b.time);
+    return Number(a.time) - Number(b.time);
+  });
+
+  return cleaned;
+}
+
 export function StockChart({ candles, loading, symbol }: StockChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<ReturnType<typeof createChart> | null>(null);
 
-  useEffect(() => {
-    if (!chartContainerRef.current || candles.length === 0) return;
+  // Memoize sanitized data to avoid recomputation on re-renders
+  const cleanCandles = useMemo(() => sanitizeCandles(candles), [candles]);
 
-    // Destroy previous chart
+  useEffect(() => {
+    const container = chartContainerRef.current;
+    if (!container || cleanCandles.length === 0) return;
+
+    // Destroy previous chart instance
     if (chartRef.current) {
       chartRef.current.remove();
       chartRef.current = null;
     }
 
-    const container = chartContainerRef.current;
-    
     // Fallbacks to prevent crash if layout isn't painted yet
     const initialWidth = container.clientWidth > 0 ? container.clientWidth : 600;
     const initialHeight = container.clientHeight > 0 ? container.clientHeight : 320;
@@ -75,7 +116,7 @@ export function StockChart({ candles, loading, symbol }: StockChartProps) {
     });
 
     try {
-      const formattedCandles = candles.map(c => ({
+      const formattedCandles = cleanCandles.map(c => ({
         time: c.time as any,
         open: c.open,
         high: c.high,
@@ -84,7 +125,7 @@ export function StockChart({ candles, loading, symbol }: StockChartProps) {
       }));
       candleSeries.setData(formattedCandles);
     } catch (err) {
-      console.error('Failed to set candle data', err);
+      console.error('Failed to set candle data:', err);
     }
 
     // Volume series
@@ -98,14 +139,14 @@ export function StockChart({ candles, loading, symbol }: StockChartProps) {
     });
 
     try {
-      const volumeData = candles.map(c => ({
+      const volumeData = cleanCandles.map(c => ({
         time: c.time as any,
         value: c.volume,
         color: c.close >= c.open ? 'rgba(16, 185, 129, 0.25)' : 'rgba(239, 68, 68, 0.25)',
       }));
       volumeSeries.setData(volumeData);
     } catch (err) {
-      console.error('Failed to set volume data', err);
+      console.error('Failed to set volume data:', err);
     }
 
     chart.timeScale().fitContent();
@@ -128,26 +169,31 @@ export function StockChart({ candles, loading, symbol }: StockChartProps) {
         chartRef.current = null;
       }
     };
-  }, [candles]);
+  }, [cleanCandles]);
 
-  if (loading) {
-    return (
-      <div className="h-[320px] w-full flex items-center justify-center bg-indalpha-dark rounded-lg">
-        <div className="flex flex-col items-center gap-2">
-          <div className="w-6 h-6 border-2 border-indalpha-green border-t-transparent rounded-full animate-spin" />
-          <span className="text-xs text-indalpha-muted">Loading chart data...</span>
+  // Always render the container so ResizeObserver can attach.
+  // Overlay spinner/message on top instead of replacing the element.
+  return (
+    <div className="relative w-full h-[320px] rounded-lg overflow-hidden">
+      {/* The chart canvas target — always in the DOM */}
+      <div ref={chartContainerRef} className="w-full h-full" />
+
+      {/* Loading overlay */}
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-indalpha-dark/80 backdrop-blur-sm z-10">
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-6 h-6 border-2 border-indalpha-green border-t-transparent rounded-full animate-spin" />
+            <span className="text-xs text-indalpha-muted">Loading chart data...</span>
+          </div>
         </div>
-      </div>
-    );
-  }
+      )}
 
-  if (candles.length === 0) {
-    return (
-      <div className="h-[320px] w-full flex items-center justify-center bg-indalpha-dark rounded-lg">
-        <span className="text-sm text-indalpha-muted">No chart data available for {symbol}</span>
-      </div>
-    );
-  }
-
-  return <div ref={chartContainerRef} className="w-full h-[320px] rounded-lg overflow-hidden" />;
+      {/* No data message — only when not loading AND no candles */}
+      {!loading && cleanCandles.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center bg-indalpha-dark z-10">
+          <span className="text-sm text-indalpha-muted">No chart data available for {symbol}</span>
+        </div>
+      )}
+    </div>
+  );
 }

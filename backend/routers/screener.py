@@ -9,6 +9,11 @@ from services import calculate_alpha_score
 
 router = APIRouter()
 
+# --- Security Helpers ---
+def _escape_like(value: str) -> str:
+    """Escape SQL LIKE/ILIKE wildcard characters to prevent wildcard injection."""
+    return value.replace('%', '\\%').replace('_', '\\_')
+
 import yfinance as yf
 import requests
 @router.get("/market/indices")
@@ -57,7 +62,8 @@ def filter_stocks(filters: schemas.ScreenerFilter, db: Session = Depends(get_db)
 
 
     if filters.sector:
-        query = query.filter(models.Stock.sector.ilike(f"%{filters.sector}%"))
+        safe_sector = _escape_like(filters.sector)
+        query = query.filter(models.Stock.sector.ilike(f"%{safe_sector}%"))
         
     if filters.market_cap_category:
         if filters.market_cap_category == "Large Cap":
@@ -68,10 +74,11 @@ def filter_stocks(filters: schemas.ScreenerFilter, db: Session = Depends(get_db)
             query = query.filter(models.Stock.market_cap < 5000)
     
     if filters.search_text:
+        safe_text = _escape_like(filters.search_text)
         query = query.filter(
-            (models.Stock.ticker.ilike(f"%{filters.search_text}%")) | 
-            (models.Stock.company_name.ilike(f"%{filters.search_text}%")) |
-            (models.Stock.sector.ilike(f"%{filters.search_text}%"))
+            (models.Stock.ticker.ilike(f"%{safe_text}%")) | 
+            (models.Stock.company_name.ilike(f"%{safe_text}%")) |
+            (models.Stock.sector.ilike(f"%{safe_text}%"))
         )
 
     if filters.min_roce is not None:
@@ -388,9 +395,10 @@ def search_stocks(q: str, db: Session = Depends(get_db)):
     seen = set()
 
     # 1. Local DB Search (Fast and precise)
+    safe_q = _escape_like(q)
     local_query = db.query(models.Stock).filter(
-        (models.Stock.ticker.ilike(f"%{q}%")) |
-        (models.Stock.company_name.ilike(f"%{q}%"))
+        (models.Stock.ticker.ilike(f"%{safe_q}%")) |
+        (models.Stock.company_name.ilike(f"%{safe_q}%"))
     ).limit(10).all()
 
     for stock in local_query:
@@ -434,9 +442,19 @@ def search_stocks(q: str, db: Session = Depends(get_db)):
     results.sort(key=lambda x: (x['score'], x['exchange'] == 'NSE'), reverse=True)
     return results[:10]
 
+# Whitelist of allowed period and interval values to prevent arbitrary yfinance params
+_VALID_PERIODS = frozenset({'1d', '5d', '1mo', '3mo', '6mo', '1y', '2y', '5y', '10y', 'max', 'ytd'})
+_VALID_INTERVALS = frozenset({'1m', '2m', '5m', '15m', '30m', '60m', '90m', '1h', '1d', '5d', '1wk', '1mo', '3mo'})
+
 @router.get("/stock/{symbol}/chart")
 def get_stock_chart(symbol: str, period: str = "6mo", interval: str = "1d"):
     """Fetch OHLCV candle data for charting."""
+    # Validate params against whitelist
+    if period not in _VALID_PERIODS:
+        raise HTTPException(status_code=422, detail=f"Invalid period: {period}")
+    if interval not in _VALID_INTERVALS:
+        raise HTTPException(status_code=422, detail=f"Invalid interval: {interval}")
+    
     try:
         ticker = yf.Ticker(symbol)
         hist = ticker.history(period=period, interval=interval)
@@ -458,7 +476,7 @@ def get_stock_chart(symbol: str, period: str = "6mo", interval: str = "1d"):
         seen_times = set()
         
         for date, row in hist.iterrows():
-            if interval in ['1d', '1wk', '1mo']:
+            if interval in ('1d', '1wk', '1mo'):
                 time_val = date.strftime('%Y-%m-%d')
             else:
                 time_val = int(date.timestamp())
@@ -479,9 +497,24 @@ def get_stock_chart(symbol: str, period: str = "6mo", interval: str = "1d"):
         # Ensure strict chronological order for lightweight-charts
         candles.sort(key=lambda x: x["time"])
         return candles
+    except HTTPException:
+        raise  # Re-raise validation errors
     except Exception as e:
-        print(f"Chart data error: {e}")
-        return []
+        print(f"Chart data error for {symbol}: {e}")
+        raise HTTPException(status_code=502, detail="Failed to fetch chart data from upstream provider")
+
+def _safe_float(val, default=0.0):
+    """Safely convert a value to float, handling None/NaN/Inf."""
+    import math as _math
+    if val is None:
+        return default
+    try:
+        f = float(val)
+        if _math.isnan(f) or _math.isinf(f):
+            return default
+        return f
+    except (TypeError, ValueError):
+        return default
 
 @router.get("/stock/{symbol}/quote")
 def get_stock_quote(symbol: str):
@@ -490,8 +523,8 @@ def get_stock_quote(symbol: str):
         ticker = yf.Ticker(symbol)
         info = ticker.fast_info
         
-        prev_close = info.previous_close or 0
-        ltp = info.last_price or 0
+        prev_close = _safe_float(info.previous_close)
+        ltp = _safe_float(info.last_price)
         change = ltp - prev_close
         change_pct = (change / prev_close * 100) if prev_close > 0 else 0
         
@@ -501,11 +534,11 @@ def get_stock_quote(symbol: str):
             "change": round(change, 2),
             "change_pct": round(change_pct, 2),
             "prev_close": round(prev_close, 2),
-            "day_high": round(info.day_high, 2) if info.day_high else 0,
-            "day_low": round(info.day_low, 2) if info.day_low else 0,
-            "year_high": round(info.year_high, 2) if info.year_high else 0,
-            "year_low": round(info.year_low, 2) if info.year_low else 0,
-            "market_cap": info.market_cap or 0
+            "day_high": round(_safe_float(info.day_high), 2),
+            "day_low": round(_safe_float(info.day_low), 2),
+            "year_high": round(_safe_float(info.year_high), 2),
+            "year_low": round(_safe_float(info.year_low), 2),
+            "market_cap": _safe_float(info.market_cap)
         }
     except Exception as e:
         print(f"Quote error: {e}")
@@ -523,12 +556,6 @@ def get_stock_quote(symbol: str):
         }
 
 
-
-def _safe_float(val):
-    import math
-    if val is None or math.isnan(val) or math.isinf(val):
-        return 0.0
-    return float(val)
 
 import re as _re
 
@@ -556,16 +583,27 @@ FIELD_MAP = {
     "book value": "book_value",
 }
 
+_MAX_QUERY_LENGTH = 500
+_MAX_QUERY_CONDITIONS = 10
+
 def _parse_query_to_filters(query_str: str, db: Session):
     """Parse a text query like 'ROCE > 20 AND PE < 30' into SQLAlchemy filters."""
     query_str = query_str.strip()
     if not query_str:
         return db.query(models.Stock).join(models.Fundamentals).join(models.Technicals)
     
+    # Input length validation to prevent abuse
+    if len(query_str) > _MAX_QUERY_LENGTH:
+        raise HTTPException(status_code=422, detail=f"Query too long (max {_MAX_QUERY_LENGTH} characters)")
+    
     base_query = db.query(models.Stock).join(models.Fundamentals).join(models.Technicals)
     
     # Split on AND (case insensitive)
     conditions = _re.split(r'\s+AND\s+', query_str, flags=_re.IGNORECASE)
+    
+    # Limit number of conditions to prevent excessive DB queries
+    if len(conditions) > _MAX_QUERY_CONDITIONS:
+        conditions = conditions[:_MAX_QUERY_CONDITIONS]
     
     for cond in conditions:
         cond = cond.strip()

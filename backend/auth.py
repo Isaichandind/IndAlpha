@@ -1,4 +1,5 @@
 import os
+import time
 import urllib.request
 import json
 from fastapi import Depends, HTTPException, status
@@ -11,23 +12,38 @@ FIREBASE_PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID")
 JWKS_URL = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
 ISSUER = f"https://securetoken.google.com/{FIREBASE_PROJECT_ID}" if FIREBASE_PROJECT_ID else None
 
-# Cache JWKS
-jwks_cache = None
+# Cache JWKS with 1-hour TTL (Google rotates keys periodically)
+_jwks_cache: dict | None = None
+_jwks_cache_expiry: float = 0.0
+JWKS_TTL_SECONDS = 3600  # 1 hour
 
 def get_jwks():
-    global jwks_cache
-    if not jwks_cache:
-        try:
-            with urllib.request.urlopen(JWKS_URL) as response:
-                jwks_cache = json.loads(response.read().decode("utf-8"))
-        except Exception as e:
-            print(f"Failed to fetch JWKS: {e}")
-            jwks_cache = {}
-    return jwks_cache
+    global _jwks_cache, _jwks_cache_expiry
+    now = time.time()
+    if _jwks_cache and now < _jwks_cache_expiry:
+        return _jwks_cache
+    try:
+        with urllib.request.urlopen(JWKS_URL, timeout=10) as response:
+            _jwks_cache = json.loads(response.read().decode("utf-8"))
+            _jwks_cache_expiry = now + JWKS_TTL_SECONDS
+    except Exception as e:
+        print(f"Failed to fetch JWKS: {e}")
+        # If we have a stale cache, return it rather than failing hard
+        if _jwks_cache:
+            return _jwks_cache
+        _jwks_cache = {}
+    return _jwks_cache
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    # If no FIREBASE_PROJECT_ID is provided, bypass auth for local development
+    is_production = os.getenv("ENVIRONMENT") == "production"
+    
+    # If no FIREBASE_PROJECT_ID is provided, bypass auth for local development ONLY
     if not FIREBASE_PROJECT_ID:
+        if is_production:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Authentication is misconfigured. FIREBASE_PROJECT_ID is missing in production."
+            )
         return {"sub": "anonymous"}
         
     if credentials is None:

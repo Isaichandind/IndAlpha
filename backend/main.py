@@ -16,8 +16,6 @@ from slowapi.middleware import SlowAPIMiddleware
 # Global rate limiter
 limiter = Limiter(key_func=get_remote_address)
 
-import threading
-
 def run_fast_seed():
     db = SessionLocal()
     try:
@@ -52,14 +50,28 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
-# Allow specific origins in production, or all origins in local development
-frontend_url = os.getenv("FRONTEND_URL", "*")
-origins = [frontend_url] if frontend_url != "*" else ["*"]
+# CORS Configuration — secure by default
+# In production, set FRONTEND_URL to your actual frontend domain (e.g. https://indalpha.vercel.app)
+frontend_url = os.getenv("FRONTEND_URL", "")
+is_production = os.getenv("ENVIRONMENT") == "production"
+
+if frontend_url:
+    # Specific origin(s) — safe to use with credentials
+    origins = [frontend_url]
+    allow_credentials = True
+elif is_production:
+    # Production without FRONTEND_URL is a misconfiguration — lock down
+    origins = ["https://indalpha.vercel.app"]
+    allow_credentials = True
+else:
+    # Local development — allow all origins but WITHOUT credentials
+    origins = ["*"]
+    allow_credentials = False
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=True,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -71,3 +83,4 @@ app.include_router(analysis.router, prefix="/api")
 @app.get("/")
 def read_root():
     return {"message": "Welcome to IndAlpha PRO API"}
+

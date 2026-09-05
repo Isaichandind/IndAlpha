@@ -32,7 +32,7 @@ export function StockDetailPanel({ stock, onClose }: StockDetailPanelProps) {
   const [chartLoading, setChartLoading] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
 
-  const API_URL = '';
+
 
   useEffect(() => {
     if (!stock) return;
@@ -45,7 +45,7 @@ export function StockDetailPanel({ stock, onClose }: StockDetailPanelProps) {
     
     const fetchQuote = async () => {
       try {
-        const res = await axios.get(`${API_URL}/stock/${stock.symbol}/quote`);
+        const res = await axios.get(`/stock/${stock.symbol}/quote`);
         if (isMounted) setQuote(res.data);
       } catch (err) {
         console.error(err);
@@ -55,7 +55,7 @@ export function StockDetailPanel({ stock, onClose }: StockDetailPanelProps) {
     const fetchProfile = async () => {
       setProfileLoading(true);
       try {
-        const res = await axios.get(`${API_URL}/stock/${stock.symbol}`);
+        const res = await axios.get(`/stock/${stock.symbol}`);
         if (isMounted) setProfile(res.data);
       } catch (err) {
         console.error(err);
@@ -81,7 +81,7 @@ export function StockDetailPanel({ stock, onClose }: StockDetailPanelProps) {
 
     const fetchChart = async () => {
       try {
-        const res = await axios.get(`${API_URL}/stock/${stock.symbol}/chart`, {
+        const res = await axios.get(`/stock/${stock.symbol}/chart`, {
           params: { period: activePeriod.value, interval: activePeriod.interval }
         });
         if (isMounted) setCandles(res.data);

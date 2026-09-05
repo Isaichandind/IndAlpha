@@ -54,10 +54,6 @@ export interface WatchlistItem {
   exchange: string;
   ltp?: number;
   change_pct?: number;
-  eps: number;
-  dividend_yield: number;
-  pb_ratio: number;
-  book_value: number;
 }
 
 export interface Watchlist {
@@ -69,7 +65,7 @@ export interface Watchlist {
 // --- Phase 1 New Types ---
 
 export interface CandleData {
-  time: number;
+  time: string | number;
   open: number;
   high: number;
   low: number;
