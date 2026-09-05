@@ -21,16 +21,16 @@ def run_fast_seed():
     try:
         count = db.query(models.Stock).count()
         if count == 0:
-            print("Database is empty. Running fast seed...")
-            # Fast seed with Nifty 50 + a few others
-            nifty_50 = [
-                "RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "ICICIBANK.NS", 
-                "HINDUNILVR.NS", "ITC.NS", "SBIN.NS", "BHARTIARTL.NS", "BAJFINANCE.NS",
-                "LICHSGFIN.NS", "ZOMATO.NS", "SUZLON.NS", "IREDA.NS", "IRFC.NS"
-            ]
-            seed_db(symbols_list=nifty_50)
+            print("Database is empty. Migrating universe from master dataset...")
+            sqlite_path = os.path.join(os.path.dirname(__file__), "indalpha.db")
+            if os.path.exists(sqlite_path):
+                from migrate_to_neon import migrate
+                migrate()
+            else:
+                from seed import seed_db
+                seed_db()
     except Exception as e:
-        print(f"Fast seed failed: {e}")
+        print(f"Auto-seed failed: {e}")
     finally:
         db.close()
 

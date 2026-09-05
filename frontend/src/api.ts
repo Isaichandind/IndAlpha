@@ -172,17 +172,45 @@ function generateOfflineCandles(symbol: string, period: string): any[] {
 
 function buildOfflineHoldings(stock: any) {
   const promoterPct = stock?.promoter_holding || 0;
-  const institutionsPct = Math.min(100 - promoterPct, 35);
+  const institutionsPct = stock?.institutions_pct || Math.min(Math.max(0, 100 - promoterPct - 20), 35);
   const publicPct = Math.max(0, 100 - promoterPct - institutionsPct);
+  
+  const ltp = stock?.ltp || 0;
+  const mcap = stock?.market_cap || 0;
+  const sharesOut = (ltp > 0 && mcap > 0) ? Math.floor((mcap * 10000000) / ltp) : 0;
+  const floatShares = sharesOut > 0 ? Math.floor(sharesOut * Math.max(0.05, 1 - promoterPct / 100)) : 0;
+
+  const roster = [];
+  if (promoterPct > 0 && stock?.company_name) {
+    roster.push({
+      name: `Promoter & Promoter Group (${stock.company_name})`,
+      position: 'Promoter / Controlling Interest',
+      shares: Math.floor(sharesOut * (promoterPct / 100)),
+      pct: promoterPct,
+      latest_transaction: 'Strategic Holding',
+      date: '2026-Q2'
+    });
+  }
+  if (institutionsPct > 0) {
+    roster.push({
+      name: 'Institutional Investors (FII / DII / Mutual Funds)',
+      position: 'Institutional Shareholder',
+      shares: Math.floor(sharesOut * (institutionsPct / 100)),
+      pct: Math.round(institutionsPct * 100) / 100,
+      latest_transaction: 'Quarterly Regulatory Filing',
+      date: '2026-Q2'
+    });
+  }
+
   return {
     summary: {
       promoters_pct: promoterPct,
       institutions_pct: Math.round(institutionsPct * 100) / 100,
       public_pct: Math.round(publicPct * 100) / 100,
-      shares_outstanding: 0,
-      float_shares: 0,
+      shares_outstanding: sharesOut,
+      float_shares: floatShares,
     },
-    roster: [],
+    roster,
   };
 }
 

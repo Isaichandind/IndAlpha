@@ -2,38 +2,38 @@ from pydantic import BaseModel
 from typing import Optional, List
 
 class FundamentalsBase(BaseModel):
-    roce: float
-    roe: float
-    pe_ratio: float
-    debt_to_equity: float
-    promoter_holding: float
-    pledged_promoter: float
-    eps: float
-    dividend_yield: float
-    pb_ratio: float
-    book_value: float
+    roce: Optional[float] = 0.0
+    roe: Optional[float] = 0.0
+    pe_ratio: Optional[float] = 0.0
+    debt_to_equity: Optional[float] = 0.0
+    promoter_holding: Optional[float] = 0.0
+    pledged_promoter: Optional[float] = 0.0
+    eps: Optional[float] = 0.0
+    dividend_yield: Optional[float] = 0.0
+    pb_ratio: Optional[float] = 0.0
+    book_value: Optional[float] = 0.0
     last_updated_date: Optional[str] = None
 
     class Config:
         from_attributes = True
 
 class TechnicalsBase(BaseModel):
-    rsi_14: float
-    ema_50: float
-    ema_200: float
-    delivery_volume: float
-    supertrend_bullish: bool
+    rsi_14: Optional[float] = 50.0
+    ema_50: Optional[float] = 0.0
+    ema_200: Optional[float] = 0.0
+    delivery_volume: Optional[float] = 0.0
+    supertrend_bullish: Optional[bool] = False
 
     class Config:
         from_attributes = True
 
 class InstitutionalBase(BaseModel):
-    q1_fii: float
-    q2_fii: float
-    q3_fii: float
-    q4_fii: float
-    q3_dii: float
-    q3_mf: float
+    q1_fii: Optional[float] = 0.0
+    q2_fii: Optional[float] = 0.0
+    q3_fii: Optional[float] = 0.0
+    q4_fii: Optional[float] = 0.0
+    q3_dii: Optional[float] = 0.0
+    q3_mf: Optional[float] = 0.0
 
     class Config:
         from_attributes = True
