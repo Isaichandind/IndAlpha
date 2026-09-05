@@ -134,17 +134,27 @@ def filter_stocks(filters: schemas.ScreenerFilter, db: Session = Depends(get_db)
         'change_pct': models.Stock.change_pct
     }
 
-    if filters.performance_date:
-        query = query.order_by(models.DailyPerformance.change_pct.desc())
-    elif filters.sort_by and filters.sort_by in SORT_COLUMNS:
+    # Determine default SQL sort if none provided
+    default_order = models.DailyPerformance.change_pct.desc() if filters.performance_date else models.Stock.market_cap.desc()
+
+    if filters.sort_by and filters.sort_by in SORT_COLUMNS:
         col = SORT_COLUMNS[filters.sort_by]
+        
+        # Special case: if filtering by a specific past date and sorting by change_pct, use the DailyPerformance column
+        if filters.performance_date and filters.sort_by == 'change_pct':
+            col = models.DailyPerformance.change_pct
+
         if filters.sort_order == 'asc':
             query = query.order_by(col.asc())
         else:
             query = query.order_by(col.desc())
+    elif filters.sort_by == 'alpha':
+        # Alpha is calculated dynamically, we can't sort across the whole DB easily.
+        # Fallback to default SQL sort, we will sort the 50 items on this page in Python.
+        query = query.order_by(default_order)
     else:
-        # Default sort by market_cap desc for consistent pagination
-        query = query.order_by(models.Stock.market_cap.desc())
+        # No sort provided, use default
+        query = query.order_by(default_order)
 
     offset = (filters.page - 1) * filters.limit
     stocks = query.offset(offset).limit(filters.limit).all()
@@ -182,12 +192,15 @@ def filter_stocks(filters: schemas.ScreenerFilter, db: Session = Depends(get_db)
                 response[-1].ltp = hist_record.close_price
                 response[-1].change_pct = hist_record.change_pct
 
-    # Sort by change_pct if querying history, otherwise by alpha score
-    # Re-sort the current page by alpha score or change_pct only if no explicit sort
-    if filters.performance_date:
-        response.sort(key=lambda x: x.change_pct, reverse=True)
+    # Apply Python-side sorting for dynamically calculated fields like Alpha Score
+    if filters.sort_by == 'alpha':
+        response.sort(key=lambda x: x.alpha_score, reverse=(filters.sort_order != 'asc'))
     elif not filters.sort_by:
-        response.sort(key=lambda x: x.alpha_score, reverse=True)
+        # If no explicit sort is provided, apply default historical page sorting
+        if filters.performance_date:
+            response.sort(key=lambda x: x.change_pct, reverse=True)
+        else:
+            response.sort(key=lambda x: x.alpha_score, reverse=True)
         
     return schemas.PaginatedStockResponse(
         total_count=total_count,
