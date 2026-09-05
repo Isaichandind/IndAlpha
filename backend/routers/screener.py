@@ -51,7 +51,7 @@ def get_market_indices():
 
 @router.post("/screener/filter", response_model=List[schemas.StockListResponse])
 def filter_stocks(filters: schemas.ScreenerFilter, db: Session = Depends(get_db)):
-    query = db.query(models.Stock).join(models.Fundamentals).join(models.Technicals).options(
+    query = db.query(models.Stock).outerjoin(models.Fundamentals).outerjoin(models.Technicals).options(
         joinedload(models.Stock.fundamentals),
         joinedload(models.Stock.technicals)
     )
@@ -658,7 +658,7 @@ def _parse_query_to_filters(query_str: str, db: Session):
     """Parse a text query like 'ROCE > 20 AND PE < 30' into SQLAlchemy filters."""
     query_str = query_str.strip()
     if not query_str:
-        return db.query(models.Stock).join(models.Fundamentals).join(models.Technicals).options(
+        return db.query(models.Stock).outerjoin(models.Fundamentals).outerjoin(models.Technicals).options(
             joinedload(models.Stock.fundamentals),
             joinedload(models.Stock.technicals)
         )
@@ -667,7 +667,7 @@ def _parse_query_to_filters(query_str: str, db: Session):
     if len(query_str) > _MAX_QUERY_LENGTH:
         raise HTTPException(status_code=422, detail=f"Query too long (max {_MAX_QUERY_LENGTH} characters)")
     
-    base_query = db.query(models.Stock).join(models.Fundamentals).join(models.Technicals).options(
+    base_query = db.query(models.Stock).outerjoin(models.Fundamentals).outerjoin(models.Technicals).options(
         joinedload(models.Stock.fundamentals),
         joinedload(models.Stock.technicals)
     )
