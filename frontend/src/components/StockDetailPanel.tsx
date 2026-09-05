@@ -11,6 +11,7 @@ import type { CandleData, StockQuote, SelectedStock, FullStockProfile, SectorBen
 interface StockDetailPanelProps {
   stock: SelectedStock | null;
   onClose: () => void;
+  alphaFundamentalWeight?: number;
 }
 
 const PERIODS = [
@@ -24,7 +25,7 @@ const PERIODS = [
   { label: 'MAX', value: 'max', interval: '1mo' },
 ];
 
-export function StockDetailPanel({ stock, onClose }: StockDetailPanelProps) {
+export function StockDetailPanel({ stock, onClose, alphaFundamentalWeight = 65 }: StockDetailPanelProps) {
   const [activeTab, setActiveTab] = useState<'chart' | 'about' | 'fundamentals' | 'financials' | 'holdings' | 'fundamental_ai'>('chart');
   const [activePeriod, setActivePeriod] = useState(PERIODS[4]); // 6M default
   const [candles, setCandles] = useState<CandleData[]>([]);
@@ -558,7 +559,7 @@ export function StockDetailPanel({ stock, onClose }: StockDetailPanelProps) {
 
           {activeTab === 'fundamental_ai' && (
             <div className="p-6">
-              <FundamentalAnalysis symbol={stock.symbol} />
+              <FundamentalAnalysis symbol={stock.symbol} fundamentalWeight={alphaFundamentalWeight} />
             </div>
           )}
         </div>

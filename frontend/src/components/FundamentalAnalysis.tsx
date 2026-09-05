@@ -10,9 +10,10 @@ import { SmartLoader } from './SmartLoader';
 
 interface Props {
   symbol: string;
+  fundamentalWeight?: number;
 }
 
-export const FundamentalAnalysis: React.FC<Props> = ({ symbol }) => {
+export const FundamentalAnalysis: React.FC<Props> = ({ symbol, fundamentalWeight = 65 }) => {
   const [data, setData] = useState<FundamentalAnalysisResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +39,7 @@ export const FundamentalAnalysis: React.FC<Props> = ({ symbol }) => {
           return;
         }
 
-        const res = await api.get(`/stock/${symbol}/analyze`, {
+        const res = await api.get(`/stock/${symbol}/analyze?fundamental_weight=${fundamentalWeight}`, {
           headers: {
             'X-Gemini-Model': aiModel,
             'X-Gemini-Api-Key': apiKey

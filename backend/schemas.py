@@ -96,6 +96,8 @@ class ScreenerFilter(BaseModel):
     limit: int = 50
     sort_by: Optional[str] = None
     sort_order: Optional[str] = 'desc'
+    
+    alpha_fundamental_weight: Optional[int] = 65
 
 class PaginatedStockResponse(BaseModel):
     total_count: int

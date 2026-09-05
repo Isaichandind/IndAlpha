@@ -533,7 +533,11 @@ function App() {
 
       {/* Stock Detail Panel (overlay) */}
       {selectedStock && (
-        <StockDetailPanel stock={selectedStock} onClose={() => setSelectedStock(null)} />
+        <StockDetailPanel 
+          stock={selectedStock} 
+          onClose={() => setSelectedStock(null)} 
+          alphaFundamentalWeight={filters.alpha_fundamental_weight ?? 65}
+        />
       )}
 
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />

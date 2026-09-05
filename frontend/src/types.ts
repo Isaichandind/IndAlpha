@@ -48,6 +48,7 @@ export interface ScreenerFilters {
   limit?: number;
   sort_by?: string;
   sort_order?: 'asc' | 'desc';
+  alpha_fundamental_weight?: number;
 }
 
 export interface PaginatedStockResponse {

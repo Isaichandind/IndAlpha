@@ -78,6 +78,7 @@ EVALUATION RULES:
 @router.get("/stock/{ticker}/analyze", response_model=FundamentalAnalysisResponse)
 def analyze_stock(
     ticker: str, 
+    fundamental_weight: int = 65,
     x_gemini_api_key: Optional[str] = Header(None), 
     x_gemini_model: Optional[str] = Header(None),
     db: Session = Depends(get_db)
@@ -124,6 +125,10 @@ def analyze_stock(
     Delivery Volume: {technicals.delivery_volume if technicals else 'N/A'}%
     
     Please use your extensive training data to supplement the missing Level 2 qualitative and operational data (e.g., Order book, Integration, JVs, 3Y CAGRs, ESG).
+    
+    IMPORTANT WEIGHTING INSTRUCTION:
+    The user has set the Alpha Score weighting to: {fundamental_weight}% Fundamental and {100 - fundamental_weight}% Technical.
+    Please calculate your final `composite_score` heavily favoring this exact weighting ratio.
     """
 
     try:

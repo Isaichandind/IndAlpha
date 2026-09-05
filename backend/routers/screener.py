@@ -162,7 +162,7 @@ def filter_stocks(filters: schemas.ScreenerFilter, db: Session = Depends(get_db)
 
     response = []
     for stock in stocks:
-        alpha_score = calculate_alpha_score(stock, stock.fundamentals, stock.technicals)
+        alpha_score = calculate_alpha_score(stock, stock.fundamentals, stock.technicals, filters.alpha_fundamental_weight or 65)
         response.append(schemas.StockListResponse(
             ticker=stock.ticker,
             company_name=stock.company_name,

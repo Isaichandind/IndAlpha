@@ -12,7 +12,7 @@ def _safe(val, default=0.0):
     except (TypeError, ValueError):
         return default
 
-def calculate_alpha_score(stock, fundamentals, technicals):
+def calculate_alpha_score(stock, fundamentals, technicals, fundamental_weight: int = 65):
     if not fundamentals or not technicals:
         return 0.0
 
@@ -65,7 +65,8 @@ def calculate_alpha_score(stock, fundamentals, technicals):
     technical_score = min(technical_score, 100)
 
     # Composite Alpha Score
-    composite_score = (fundamental_score * 0.65) + (technical_score * 0.35)
+    tech_weight = 100 - fundamental_weight
+    composite_score = (fundamental_score * (fundamental_weight / 100.0)) + (technical_score * (tech_weight / 100.0))
     
     # Professional Data Quality Penalty
     # If Market Cap is 0 (missing data from API/Exchange), heavily penalize the stock 

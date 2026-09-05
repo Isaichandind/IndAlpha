@@ -23,13 +23,34 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ filters, setFilter
       <h2 className="text-sm font-bold text-indalpha-muted uppercase mb-4 tracking-wider">Weightage Model</h2>
       <div className="mb-6">
         <div className="flex justify-between text-xs mb-2">
-          <span className="text-indalpha-green font-medium">Fundamental: 65%</span>
-          <span className="text-indalpha-text font-medium">Technical: 35%</span>
+          <span className="text-indalpha-green font-medium">Fundamental: {filters.alpha_fundamental_weight ?? 65}%</span>
+          <span className="text-indalpha-text font-medium">Technical: {100 - (filters.alpha_fundamental_weight ?? 65)}%</span>
         </div>
-        <div className="h-1.5 w-full bg-gray-700 rounded-full flex overflow-hidden">
-          <div className="bg-indalpha-green h-full" style={{ width: '65%' }}></div>
-          <div className="bg-gray-500 h-full" style={{ width: '35%' }}></div>
-        </div>
+        <input 
+          type="range"
+          min="0"
+          max="100"
+          value={filters.alpha_fundamental_weight ?? 65}
+          onChange={(e) => setFilters(prev => ({ ...prev, alpha_fundamental_weight: parseInt(e.target.value) }))}
+          onMouseUp={onApply}
+          onTouchEnd={onApply}
+          className="w-full h-2 rounded-full appearance-none cursor-pointer focus:outline-none"
+          style={{
+            background: `linear-gradient(to right, #00C853 ${filters.alpha_fundamental_weight ?? 65}%, #6B7280 ${filters.alpha_fundamental_weight ?? 65}%)`
+          }}
+        />
+        <style dangerouslySetInnerHTML={{__html: `
+          input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 0 4px rgba(0,0,0,0.5);
+          }
+        `}} />
       </div>
 
       <h2 className="text-sm font-bold text-indalpha-muted uppercase mb-4 tracking-wider border-b border-indalpha-border pb-2">General</h2>
