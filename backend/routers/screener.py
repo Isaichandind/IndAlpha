@@ -679,33 +679,19 @@ def get_stock_about(symbol: str, db: Session = Depends(get_db)):
         symbol = stock.ticker
 
     try:
-        yq_ticker = YQTicker(symbol)
-        profile_dict = yq_ticker.asset_profile
+        # Use yfinance since it has an active crumb/cookie manager to avoid 401s
+        ticker = yf.Ticker(symbol)
+        info = ticker.info
         
-        if isinstance(profile_dict, dict) and symbol in profile_dict:
-            info = profile_dict[symbol]
-            if isinstance(info, dict):
-                return {
-                    "symbol": symbol,
-                    "name": stock.company_name if stock else symbol,
-                    "sector": info.get("sector", ""),
-                    "industry": info.get("industry", ""),
-                    "website": info.get("website", ""),
-                    "summary": info.get("longBusinessSummary", ""),
-                    "employees": info.get("fullTimeEmployees", 0),
-                    "address": f"{info.get('city', '')}, {info.get('country', '')}".strip(', ')
-                }
-        
-        # Fallback if YahooQuery fails or returns string error
         return {
             "symbol": symbol,
-            "name": stock.company_name if stock else symbol,
-            "sector": "",
-            "industry": "",
-            "website": "",
-            "summary": "Profile information is currently unavailable for this company.",
-            "employees": 0,
-            "address": ""
+            "name": info.get("shortName") or info.get("longName") or stock.company_name if stock else symbol,
+            "sector": info.get("sector", ""),
+            "industry": info.get("industry", ""),
+            "website": info.get("website", ""),
+            "summary": info.get("longBusinessSummary", ""),
+            "employees": info.get("fullTimeEmployees", 0),
+            "address": f"{info.get('city', '')}, {info.get('country', '')}".strip(', ')
         }
     except Exception as e:
         print(f"About data error for {symbol}: {e}")
