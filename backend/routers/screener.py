@@ -701,7 +701,7 @@ def get_stock_about(symbol: str, db: Session = Depends(get_db)):
             "sector": "",
             "industry": "",
             "website": "",
-            "summary": "Profile information is currently unavailable for this company.",
+            "summary": f"DEBUG: {str(e)}",
             "employees": 0,
             "address": ""
         }
