@@ -3,7 +3,7 @@ import api from '../api';
 import type { FundamentalAnalysisResponse } from '../types';
 import { 
   CheckCircle2, AlertTriangle, XCircle, ChevronRight, 
-  BrainCircuit, ShieldAlert, TrendingUp, BarChart3,
+  ShieldAlert, TrendingUp, BarChart3,
   Activity, Scale, Shield, Factory, FileWarning
 } from 'lucide-react';
 import { SmartLoader } from './SmartLoader';

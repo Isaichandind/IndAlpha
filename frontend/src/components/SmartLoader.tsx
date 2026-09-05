@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Loader2, Quote as QuoteIcon } from 'lucide-react';
-import { getRandomQuote, Quote } from '../utils/quotes';
+import { getRandomQuote, type Quote } from '../utils/quotes';
 
 interface SmartLoaderProps {
   message?: string;
