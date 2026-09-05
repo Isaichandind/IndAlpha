@@ -9,3 +9,4 @@ python-dotenv
 python-jose[cryptography]
 slowapi
 psycopg2-binary
+beautifulsoup4
