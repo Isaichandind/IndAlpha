@@ -168,6 +168,51 @@ def fetch_missing_sectors(db: Session, batch_size: int = 50) -> int:
     logger.info("Updated %d sectors from Yahoo.", updated_sectors)
     return updated_sectors
 
+def fix_missing_market_caps(db: Session, batch_size: int = 50) -> int:
+    """Fetch missing market caps via yahooquery in batches."""
+    logger.info("Querying Yahoo for missing market caps...")
+    missing_mcaps = db.query(models.Stock).filter(
+        (models.Stock.market_cap.is_(None)) | (models.Stock.market_cap <= 0)
+    ).all()
+
+    total_missing = len(missing_mcaps)
+    logger.info("Found %d stocks with missing market cap.", total_missing)
+
+    if total_missing == 0:
+        return 0
+
+    updated_mcaps = 0
+    total_batches = (total_missing + batch_size - 1) // batch_size
+
+    for i in range(0, total_missing, batch_size):
+        batch = missing_mcaps[i:i+batch_size]
+        symbols = [s.ticker for s in batch]
+        current_batch = i // batch_size + 1
+        logger.info("Processing Market Cap Batch %d/%d (%d stocks)...", current_batch, total_batches, len(symbols))
+
+        try:
+            t = Ticker(symbols, asynchronous=True)
+            details = t.summary_detail
+            
+            if isinstance(details, dict):
+                for stock in batch:
+                    d = details.get(stock.ticker)
+                    if isinstance(d, dict):
+                        mcap = d.get('marketCap')
+                        if mcap and mcap > 0:
+                            stock.market_cap = mcap / 10000000  # Convert to Crores
+                            updated_mcaps += 1
+            db.commit()
+        except Exception as e:
+            logger.error("Market Cap Batch %d failed: %s", current_batch, e)
+            db.rollback()
+
+        # Rate limiting sleep
+        time.sleep(0.5)
+
+    logger.info("Updated %d market caps from Yahoo.", updated_mcaps)
+    return updated_mcaps
+
 def fix_fundamental_anomalies(db: Session) -> int:
     """Validates and fixes anomalies in fundamental data."""
     logger.info("Validating and fixing fundamental anomalies...")
@@ -208,8 +253,8 @@ def sync_to_sqlite(db: Session) -> None:
             sq_cur = sq_conn.cursor()
             
             stocks = db.query(models.Stock).all()
-            stock_updates = [(s.sector, s.ticker) for s in stocks if s.sector]
-            sq_cur.executemany("UPDATE stocks SET sector = ? WHERE ticker = ?", stock_updates)
+            stock_updates = [(s.sector, s.market_cap, s.ticker) for s in stocks]
+            sq_cur.executemany("UPDATE stocks SET sector = ?, market_cap = ? WHERE ticker = ?", stock_updates)
             
             funds = db.query(models.Fundamentals).all()
             fund_updates = [(f.roce, f.roe, f.pe_ratio, f.ticker) for f in funds]
@@ -233,6 +278,7 @@ def enrich() -> None:
     try:
         apply_benchmark_mappings(db)
         fetch_missing_sectors(db)
+        fix_missing_market_caps(db)
         fix_fundamental_anomalies(db)
 
         # Check final stats

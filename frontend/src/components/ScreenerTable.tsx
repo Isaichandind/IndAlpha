@@ -39,11 +39,11 @@ const ALL_COLUMNS: { key: ColumnKey; label: string; defaultVisible: boolean }[] 
   { key: 'pb', label: 'P/B Ratio', defaultVisible: false },
   { key: 'div', label: 'Div Yield', defaultVisible: false },
   { key: 'de', label: 'Debt/Equity', defaultVisible: false },
-  { key: 'ph', label: 'Promoter %', defaultVisible: false },
-  { key: 'pledge', label: 'Pledge %', defaultVisible: true },
+  { key: 'ph', label: 'Promoter %', defaultVisible: true },
+  { key: 'pledge', label: 'Pledge %', defaultVisible: false },
   { key: 'delivery', label: 'Delivery Vol %', defaultVisible: true },
   { key: 'bv', label: 'Book Value', defaultVisible: false },
-  { key: 'tag', label: 'Tag', defaultVisible: true },
+  { key: 'tag', label: 'Tag', defaultVisible: false },
 ];
 
 export const ScreenerTable: React.FC<ScreenerTableProps> = ({ stocks, loading, onSelectStock }) => {
