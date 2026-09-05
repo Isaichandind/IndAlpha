@@ -36,55 +36,68 @@ export function StockDetailPanel({ stock, onClose }: StockDetailPanelProps) {
 
   useEffect(() => {
     if (!stock) return;
+
+    let isMounted = true;
+    
+    // Clear previous stock's data
+    setQuote(null);
+    setProfile(null);
+    
+    const fetchQuote = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/stock/${stock.symbol}/quote`);
+        if (isMounted) setQuote(res.data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    const fetchProfile = async () => {
+      setProfileLoading(true);
+      try {
+        const res = await axios.get(`${API_URL}/stock/${stock.symbol}`);
+        if (isMounted) setProfile(res.data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (isMounted) setProfileLoading(false);
+      }
+    };
+
     fetchQuote();
     fetchProfile();
-    // Do not fetch financials on load to prevent rate limiting.
-    fetchChart(activePeriod);
+
+    return () => {
+      isMounted = false;
+    };
   }, [stock]);
 
   useEffect(() => {
     if (!stock) return;
-    fetchChart(activePeriod);
-  }, [activePeriod]);
-
-  const fetchQuote = async () => {
-    if (!stock) return;
-    try {
-      const res = await axios.get(`${API_URL}/stock/${stock.symbol}/quote`);
-      setQuote(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const fetchProfile = async () => {
-    if (!stock) return;
-    setProfileLoading(true);
-    try {
-      const res = await axios.get(`${API_URL}/stock/${stock.symbol}`);
-      setProfile(res.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setProfileLoading(false);
-    }
-  };
-
-
-  const fetchChart = async (period: typeof PERIODS[0]) => {
-    if (!stock) return;
+    
+    let isMounted = true;
+    setCandles([]);
     setChartLoading(true);
-    try {
-      const res = await axios.get(`${API_URL}/stock/${stock.symbol}/chart`, {
-        params: { period: period.value, interval: period.interval }
-      });
-      setCandles(res.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setChartLoading(false);
-    }
-  };
+
+    const fetchChart = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/stock/${stock.symbol}/chart`, {
+          params: { period: activePeriod.value, interval: activePeriod.interval }
+        });
+        if (isMounted) setCandles(res.data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (isMounted) setChartLoading(false);
+      }
+    };
+
+    fetchChart();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [stock, activePeriod]);
 
   if (!stock) return null;
 
