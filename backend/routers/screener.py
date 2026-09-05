@@ -15,6 +15,7 @@ def _escape_like(value: str) -> str:
     return value.replace('%', '\\%').replace('_', '\\_')
 
 import yfinance as yf
+from yahooquery import Ticker as YQTicker
 import requests
 @router.get("/market/indices")
 def get_market_indices():
@@ -678,24 +679,39 @@ def get_stock_about(symbol: str, db: Session = Depends(get_db)):
         symbol = stock.ticker
 
     try:
-        ticker = yf.Ticker(symbol)
-        info = ticker.info
+        yq_ticker = YQTicker(symbol)
+        profile_dict = yq_ticker.asset_profile
         
+        if isinstance(profile_dict, dict) and symbol in profile_dict:
+            info = profile_dict[symbol]
+            if isinstance(info, dict):
+                return {
+                    "symbol": symbol,
+                    "name": stock.company_name if stock else symbol,
+                    "sector": info.get("sector", ""),
+                    "industry": info.get("industry", ""),
+                    "website": info.get("website", ""),
+                    "summary": info.get("longBusinessSummary", ""),
+                    "employees": info.get("fullTimeEmployees", 0),
+                    "address": f"{info.get('city', '')}, {info.get('country', '')}".strip(', ')
+                }
+        
+        # Fallback if YahooQuery fails or returns string error
         return {
             "symbol": symbol,
-            "name": info.get("shortName") or info.get("longName") or "",
-            "sector": info.get("sector", ""),
-            "industry": info.get("industry", ""),
-            "website": info.get("website", ""),
-            "summary": info.get("longBusinessSummary", ""),
-            "employees": info.get("fullTimeEmployees", 0),
-            "address": f"{info.get('city', '')}, {info.get('country', '')}".strip(', ')
+            "name": stock.company_name if stock else symbol,
+            "sector": "",
+            "industry": "",
+            "website": "",
+            "summary": "Profile information is currently unavailable for this company.",
+            "employees": 0,
+            "address": ""
         }
     except Exception as e:
         print(f"About data error for {symbol}: {e}")
         return {
             "symbol": symbol,
-            "name": "",
+            "name": stock.company_name if stock else symbol,
             "sector": "",
             "industry": "",
             "website": "",
