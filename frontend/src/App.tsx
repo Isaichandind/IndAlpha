@@ -13,6 +13,7 @@ import { MarketMovers } from './components/MarketMovers';
 import type { StockData, IndexData, ScreenerFilters, Watchlist, SelectedStock, MarketMoversData, PaginatedStockResponse } from './types';
 import { AiChatWidget } from './components/AiChatWidget';
 import { LockScreen } from './components/LockScreen';
+import { SmartLoader } from './components/SmartLoader';
 
 import { LoginModal } from './components/LoginModal';
 import { UserProfileModal } from './components/UserProfileModal';
@@ -280,6 +281,15 @@ function App() {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-indalpha-dark text-indalpha-text">
+      {syncing && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md">
+          <SmartLoader 
+            message="SYNCING MARKET DATA..." 
+            rotateIntervalMs={6000} 
+            className="scale-125"
+          />
+        </div>
+      )}
       {/* Top Navigation */}
       <header className="h-14 bg-indalpha-dark border-b border-indalpha-border flex items-center justify-between px-4 md:px-6 shrink-0 relative z-30">
         <div className="flex items-center gap-3 md:gap-6">
