@@ -45,30 +45,30 @@ def backfill_history():
                     if stock_data.empty:
                         continue
                         
-                    # Drop NaN rows
+                    # Drop NaN rows initially
                     stock_data = stock_data.dropna(subset=['Close'])
                     
-                    for date_idx, row in stock_data.iterrows():
-                        date_str = date_idx.strftime("%Y-%m-%d")
-                        close_price = row['Close']
-                        volume = row['Volume'] if 'Volume' in row else 0
-                        
-                        # Calculate change_pct based on previous day if available
-                        # We can approximate change_pct or calculate it accurately if we have the previous row
-                        # For simplicity, yfinance doesn't easily give previous day's close row by row unless we shift
-                        # Let's shift the dataframe to get previous close
+                    # Ensure the index is a DatetimeIndex
+                    stock_data.index = pd.to_datetime(stock_data.index)
                     
+                    # Resample to calendar days to include weekends/holidays, then forward fill
+                    # This ensures missing dates like Sept 1 to 3 (if they were weekends/holidays) are populated with the last known price.
+                    stock_data = stock_data.resample('D').asfreq()
+                    stock_data['Close'] = stock_data['Close'].ffill()
+                    if 'Volume' in stock_data.columns:
+                        stock_data['Volume'] = stock_data['Volume'].fillna(0)
+                        
                     stock_data['PrevClose'] = stock_data['Close'].shift(1)
                     
                     for date_idx, row in stock_data.iterrows():
                         date_str = date_idx.strftime("%Y-%m-%d")
-                        close_price = row['Close']
-                        prev_close = row['PrevClose']
-                        volume = row.get('Volume', 0)
+                        close_price = float(row['Close'])
+                        prev_close = float(row['PrevClose']) if pd.notna(row['PrevClose']) else None
+                        volume = int(row.get('Volume', 0)) if pd.notna(row.get('Volume', 0)) else 0
                         
                         change_pct = 0.0
-                        if pd.notna(prev_close) and prev_close > 0:
-                            change_pct = round(((close_price - prev_close) / prev_close) * 100, 2)
+                        if prev_close and prev_close > 0:
+                            change_pct = float(round(((close_price - prev_close) / prev_close) * 100, 2))
                         
                         # Check if record already exists
                         dp = db.query(models.DailyPerformance).filter(
