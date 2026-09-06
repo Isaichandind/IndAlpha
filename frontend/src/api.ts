@@ -371,8 +371,8 @@ api.interceptors.response.use(
           if (q.length >= 2) {
             const results = _offlineStocksCache
               .filter((s: any) => 
-                s.ticker.toLowerCase().includes(q) || 
-                (s.company_name && s.company_name.toLowerCase().includes(q))
+                (s.ticker && String(s.ticker).toLowerCase().includes(q)) || 
+                (s.company_name && String(s.company_name).toLowerCase().includes(q))
               )
               .slice(0, 10)
               .map((s: any) => ({

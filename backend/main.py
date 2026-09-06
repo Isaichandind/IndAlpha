@@ -64,8 +64,24 @@ async def lifespan(app: FastAPI):
                 conn.execute(text("ALTER TABLE fundamentals ADD COLUMN last_updated_date VARCHAR"))
             except Exception:
                 pass
+
+        # Hotfix: Correct USA and China stocks that were mislabeled as 'India' due to seed_global string extraction bug
+        db = SessionLocal()
+        from seed_global import get_usa_equities, get_china_equities
+        usa_symbols = get_usa_equities()
+        if usa_symbols:
+            db.query(models.Stock).filter(models.Stock.ticker.in_(usa_symbols)).update({"country": "USA", "currency": "USD"}, synchronize_session=False)
+        china_symbols = get_china_equities()
+        if china_symbols:
+            db.query(models.Stock).filter(models.Stock.ticker.in_(china_symbols)).update({"country": "China"}, synchronize_session=False)
+            db.query(models.Stock).filter(models.Stock.ticker.in_(china_symbols)).filter(models.Stock.ticker.endswith('.HK')).update({"currency": "HKD"}, synchronize_session=False)
+            db.query(models.Stock).filter(models.Stock.ticker.in_(china_symbols)).filter(models.Stock.ticker.endswith('.SS')).update({"currency": "CNY"}, synchronize_session=False)
+            db.query(models.Stock).filter(models.Stock.ticker.in_(china_symbols)).filter(models.Stock.ticker.endswith('.SZ')).update({"currency": "CNY"}, synchronize_session=False)
+            db.query(models.Stock).filter(models.Stock.ticker.in_(["FXI", "MCHI", "KWEB", "ASHR"])).update({"currency": "USD"}, synchronize_session=False)
+        db.commit()
+        db.close()
     except Exception as e:
-        print(f"Migration error: {e}")
+        print(f"Auto-migration or hotfix failed: {e}")
 
     # Run seed in background to avoid blocking boot
     threading.Thread(target=run_fast_seed, daemon=True).start()

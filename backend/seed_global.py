@@ -94,8 +94,7 @@ def seed_global():
         
         # After seeding, update their country/asset_type in the DB
         db = SessionLocal()
-        usa_tickers = [s[0] for s in usa_symbols]
-        db.query(models.Stock).filter(models.Stock.ticker.in_(usa_tickers)).update(
+        db.query(models.Stock).filter(models.Stock.ticker.in_(usa_symbols)).update(
             {"country": "USA", "currency": "USD"}, synchronize_session=False
         )
         db.commit()
@@ -107,18 +106,17 @@ def seed_global():
         seed_db(china_symbols)
         
         db = SessionLocal()
-        china_tickers = [s[0] for s in china_symbols]
-        db.query(models.Stock).filter(models.Stock.ticker.in_(china_tickers)).update(
+        db.query(models.Stock).filter(models.Stock.ticker.in_(china_symbols)).update(
             {"country": "China"}, synchronize_session=False
         )
         # HK is HKD, SS/SZ is CNY
-        db.query(models.Stock).filter(models.Stock.ticker.in_(china_tickers)).filter(models.Stock.ticker.endswith('.HK')).update(
+        db.query(models.Stock).filter(models.Stock.ticker.in_(china_symbols)).filter(models.Stock.ticker.endswith('.HK')).update(
             {"currency": "HKD"}, synchronize_session=False
         )
-        db.query(models.Stock).filter(models.Stock.ticker.in_(china_tickers)).filter(models.Stock.ticker.endswith('.SS')).update(
+        db.query(models.Stock).filter(models.Stock.ticker.in_(china_symbols)).filter(models.Stock.ticker.endswith('.SS')).update(
             {"currency": "CNY"}, synchronize_session=False
         )
-        db.query(models.Stock).filter(models.Stock.ticker.in_(china_tickers)).filter(models.Stock.ticker.endswith('.SZ')).update(
+        db.query(models.Stock).filter(models.Stock.ticker.in_(china_symbols)).filter(models.Stock.ticker.endswith('.SZ')).update(
             {"currency": "CNY"}, synchronize_session=False
         )
         db.query(models.Stock).filter(models.Stock.ticker.in_(["FXI", "MCHI", "KWEB", "ASHR"])).update(

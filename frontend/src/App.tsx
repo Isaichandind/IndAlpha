@@ -273,8 +273,8 @@ function App() {
   };
 
   const filteredTableStocks = stocks.filter(s => 
-    s.ticker.toLowerCase().includes(tableSearchQuery.toLowerCase()) || 
-    (s.company_name && s.company_name.toLowerCase().includes(tableSearchQuery.toLowerCase()))
+    (s.ticker && String(s.ticker).toLowerCase().includes(tableSearchQuery.toLowerCase())) || 
+    (s.company_name && String(s.company_name).toLowerCase().includes(tableSearchQuery.toLowerCase()))
   );
 
   if (!isUnlocked) {
