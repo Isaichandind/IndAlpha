@@ -38,6 +38,35 @@ def run_fast_seed():
 async def lifespan(app: FastAPI):
     # Create tables
     models.Base.metadata.create_all(bind=engine)
+    
+    # Auto-migrate missing columns for existing production databases (Render Postgres/SQLite)
+    from sqlalchemy import text
+    try:
+        with engine.begin() as conn:
+            # Catch exceptions per column since ADD COLUMN IF NOT EXISTS is not supported uniformly (e.g. SQLite)
+            try:
+                conn.execute(text("ALTER TABLE stocks ADD COLUMN country VARCHAR DEFAULT 'India'"))
+            except Exception:
+                pass
+            try:
+                conn.execute(text("ALTER TABLE stocks ADD COLUMN asset_type VARCHAR DEFAULT 'EQUITY'"))
+            except Exception:
+                pass
+            try:
+                conn.execute(text("ALTER TABLE stocks ADD COLUMN currency VARCHAR DEFAULT 'INR'"))
+            except Exception:
+                pass
+            try:
+                conn.execute(text("ALTER TABLE stocks ADD COLUMN last_updated_date VARCHAR"))
+            except Exception:
+                pass
+            try:
+                conn.execute(text("ALTER TABLE fundamentals ADD COLUMN last_updated_date VARCHAR"))
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"Migration error: {e}")
+
     # Run seed in background to avoid blocking boot
     threading.Thread(target=run_fast_seed, daemon=True).start()
     yield
