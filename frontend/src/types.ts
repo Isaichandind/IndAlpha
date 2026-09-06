@@ -100,6 +100,7 @@ export interface StockQuote {
   year_high: number;
   year_low: number;
   market_cap: number;
+  currency?: string;
 }
 
 export interface SelectedStock {
