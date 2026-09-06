@@ -820,9 +820,6 @@ def get_stock_about(symbol: str, db: Session = Depends(get_db)):
     if not summary:
         try:
             yf_symbol = stock.ticker if stock else symbol
-            if not yf_symbol.endswith('.NS') and not yf_symbol.endswith('.BO'):
-                yf_symbol += '.NS'
-                
             ticker = yf.Ticker(yf_symbol)
             info = ticker.info
             
