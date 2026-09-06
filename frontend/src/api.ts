@@ -279,6 +279,16 @@ api.interceptors.response.use(
           }
 
           // Simulate a successful Axios response
+          if (url.includes('/screener/filter')) {
+            const paginatedData = {
+              data,
+              total_count: data.length,
+              page: 1,
+              limit: 50,
+              total_pages: 1
+            };
+            return { data: paginatedData, status: 200, statusText: 'OK', headers: {}, config: error.config };
+          }
           return { data, status: 200, statusText: 'OK', headers: {}, config: error.config };
         }
         
