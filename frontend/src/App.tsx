@@ -67,7 +67,6 @@ function App() {
       setSessionLoading(false);
     });
 
-    fetchIndices();
     fetchTradingDates();
 
     const handleOpenSettings = () => setIsSettingsOpen(true);
@@ -78,6 +77,10 @@ function App() {
       unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    fetchIndices();
+  }, [filters.country]);
 
   // Fetch watchlists when session changes
   useEffect(() => {

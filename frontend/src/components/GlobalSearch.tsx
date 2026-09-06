@@ -53,19 +53,6 @@ export function GlobalSearch({ onAddStock, onViewChart }: GlobalSearchProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      if (query.trim().length >= 2) {
-        fetchResults(query);
-      } else {
-        setResults([]);
-        setIsOpen(false);
-      }
-    }, 150);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [query]);
-
   const fetchResults = async (searchQuery: string) => {
     setIsLoading(true);
     try {
@@ -87,6 +74,19 @@ export function GlobalSearch({ onAddStock, onViewChart }: GlobalSearchProps) {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (query.trim().length >= 2) {
+        fetchResults(query);
+      } else {
+        setResults([]);
+        setIsOpen(false);
+      }
+    }, 150);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [query]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!isOpen || results.length === 0) {

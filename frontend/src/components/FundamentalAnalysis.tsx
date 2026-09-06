@@ -58,7 +58,7 @@ export const FundamentalAnalysis: React.FC<Props> = ({ symbol, fundamentalWeight
     };
     
     fetchAnalysis();
-  }, [symbol]);
+  }, [symbol, fundamentalWeight]);
 
   if (loading) {
     return (
