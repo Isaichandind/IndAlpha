@@ -786,65 +786,97 @@ def get_stock_about(symbol: str, db: Session = Depends(get_db)):
             (models.Stock.ticker == f"{symbol}.NS") | (models.Stock.ticker == f"{symbol}.BO")
         ).first()
     
-    base_symbol = symbol.replace('.NS', '').replace('.BO', '')
-    if stock:
-        base_symbol = stock.ticker.replace('.NS', '').replace('.BO', '')
+    yf_symbol = stock.ticker if stock else symbol
+    country = stock.country if stock else ""
+    is_indian = yf_symbol.endswith('.NS') or yf_symbol.endswith('.BO') or country == "India"
 
     summary = ""
     website = ""
+    industry = ""
+    sector = stock.sector if stock else ""
+    employees = 0
+    address = ""
+    name = stock.company_name if stock else symbol
     
-    try:
-        from bs4 import BeautifulSoup
-        import requests
-        
-        # Scrape screener.in (more reliable for Indian stocks on Datacenter IPs)
-        res = requests.get(f"https://www.screener.in/company/{base_symbol}/", headers={
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }, timeout=5)
-        
-        if res.status_code == 200:
-            soup = BeautifulSoup(res.text, 'html.parser')
-            about_div = soup.find('div', class_='company-profile')
-            if about_div:
-                sub_div = about_div.find('div', class_='sub')
-                if sub_div:
-                    summary = sub_div.text.strip()
+    # 1. Scrape screener.in ONLY for Indian stocks
+    if is_indian:
+        base_symbol = yf_symbol.replace('.NS', '').replace('.BO', '')
+        try:
+            from bs4 import BeautifulSoup
+            import requests
             
-            website_tag = soup.find('a', string=lambda t: t and 'Website' in t)
-            if website_tag and 'href' in website_tag.attrs:
-                website = website_tag['href']
-    except Exception as e:
-        print(f"Screener scrape error for {symbol}: {e}")
+            res = requests.get(f"https://www.screener.in/company/{base_symbol}/", headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }, timeout=3)
+            
+            if res.status_code == 200:
+                soup = BeautifulSoup(res.text, 'html.parser')
+                about_div = soup.find('div', class_='company-profile')
+                if about_div:
+                    sub_div = about_div.find('div', class_='sub')
+                    if sub_div:
+                        summary = sub_div.text.strip()
+                
+                website_tag = soup.find('a', string=lambda t: t and 'Website' in t)
+                if website_tag and 'href' in website_tag.attrs:
+                    website = website_tag['href']
+        except Exception as e:
+            print(f"Screener scrape error for {symbol}: {e}")
 
-    # Fallback to yfinance if screener summary is empty (will likely 401 on Render, but good for local)
+    # 2. Try yfinance fallback (faster for US/China metadata if it exists)
     if not summary:
         try:
-            yf_symbol = stock.ticker if stock else symbol
+            import yfinance as yf
             ticker = yf.Ticker(yf_symbol)
             info = ticker.info
             
-            return {
-                "symbol": symbol,
-                "name": info.get("shortName") or info.get("longName") or (stock.company_name if stock else symbol),
-                "sector": info.get("sector", "") or (stock.sector if stock else ""),
-                "industry": info.get("industry", ""),
-                "website": info.get("website", "") or website,
-                "summary": info.get("longBusinessSummary", ""),
-                "employees": info.get("fullTimeEmployees", 0),
-                "address": f"{info.get('city', '')}, {info.get('country', '')}".strip(', ')
-            }
+            if info:
+                summary = info.get("longBusinessSummary", summary)
+                website = info.get("website", website)
+                industry = info.get("industry", industry)
+                sector = info.get("sector", sector)
+                employees = info.get("fullTimeEmployees", employees)
+                name = info.get("shortName") or info.get("longName") or name
+                city = info.get('city', '')
+                cntry = info.get('country', '')
+                address = f"{city}, {cntry}".strip(', ')
         except Exception as e:
             print(f"yfinance fallback error for {symbol}: {e}")
 
+    # 3. Try yahooquery as last resort (sometimes has data yfinance misses)
+    if not summary:
+        try:
+            from yahooquery import Ticker as YQTicker
+            yq = YQTicker(yf_symbol)
+            
+            profile_data = yq.asset_profile
+            if isinstance(profile_data, dict) and yf_symbol in profile_data:
+                profile = profile_data[yf_symbol]
+                if isinstance(profile, dict):
+                    summary = profile.get("longBusinessSummary", summary)
+                    website = profile.get("website", website)
+                    industry = profile.get("industry", industry)
+                    sector = profile.get("sector", sector)
+                    employees = profile.get("fullTimeEmployees", employees)
+                    city = profile.get('city', '')
+                    cntry = profile.get('country', '')
+                    address = f"{city}, {cntry}".strip(', ')
+                    
+            price_data = yq.price
+            if isinstance(price_data, dict) and yf_symbol in price_data and isinstance(price_data[yf_symbol], dict):
+                name = price_data[yf_symbol].get("shortName") or price_data[yf_symbol].get("longName") or name
+        except Exception as e:
+            print(f"yahooquery fallback error for {symbol}: {e}")
+
     return {
         "symbol": symbol,
-        "name": stock.company_name if stock else symbol,
-        "sector": stock.sector if stock else "",
-        "industry": "Public Company",
+        "name": name,
+        "sector": sector,
+        "industry": industry or ("Public Company" if summary else ""),
         "website": website,
         "summary": summary or "Profile information is currently unavailable for this company.",
-        "employees": 0,
-        "address": "India"
+        "employees": employees,
+        "address": address or ("India" if is_indian else "")
     }
 
 @router.get("/stock/{symbol}/quote")
