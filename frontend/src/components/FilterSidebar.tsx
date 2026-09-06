@@ -57,6 +57,20 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ filters, setFilter
       
       <div className="space-y-4 mb-6">
         <div className="flex flex-col gap-1.5">
+          <label className="text-sm text-indalpha-text">Asset Type</label>
+          <select 
+            name="asset_type" 
+            value={filters.asset_type || ''} 
+            onChange={(e) => setFilters(prev => ({ ...prev, asset_type: e.target.value === '' ? undefined : e.target.value }))}
+            className="w-full bg-indalpha-card border border-indalpha-border rounded py-1.5 px-2 text-sm text-indalpha-text focus:outline-none focus:border-indalpha-green"
+          >
+            <option value="">All Assets</option>
+            <option value="EQUITY">Equity (Stocks)</option>
+            <option value="ETF">ETF</option>
+            <option value="MUTUAL FUND">Mutual Fund</option>
+          </select>
+        </div>
+        <div className="flex flex-col gap-1.5">
           <label className="text-sm text-indalpha-text">Sector</label>
           <select 
             name="sector" 

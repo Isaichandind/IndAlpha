@@ -102,6 +102,7 @@ class ScreenerFilter(BaseModel):
     
     alpha_fundamental_weight: Optional[int] = 65
     country: Optional[str] = 'India'
+    asset_type: Optional[str] = None
 
 class PaginatedStockResponse(BaseModel):
     total_count: int

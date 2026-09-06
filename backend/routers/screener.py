@@ -88,6 +88,9 @@ def filter_stocks(filters: schemas.ScreenerFilter, db: Session = Depends(get_db)
     if filters.country and filters.country != 'Global':
         query = query.filter(models.Stock.country == filters.country)
 
+    if filters.asset_type and filters.asset_type != 'ALL':
+        query = query.filter(models.Stock.asset_type == filters.asset_type)
+
     if filters.performance_date:
         query = query.join(models.DailyPerformance).filter(models.DailyPerformance.date == filters.performance_date)
         if filters.min_change_pct is not None:
