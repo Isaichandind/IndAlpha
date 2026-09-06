@@ -94,11 +94,11 @@ function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
-  // Only refetch movers when performance_date changes, not on every filter tweak
+  // Refetch movers when performance_date or country changes
   useEffect(() => {
     fetchMovers();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.performance_date]);
+  }, [filters.performance_date, filters.country]);
 
   useEffect(() => {
     if (activeWatchlistId !== null) {
@@ -221,9 +221,10 @@ function App() {
   const fetchMovers = async () => {
     setMoversLoading(true);
     try {
+      const currentCountry = filters.country || 'India';
       const url = filters.performance_date 
-        ? `/market/movers?date=${filters.performance_date}` 
-        : '/market/movers';
+        ? `/market/movers?date=${filters.performance_date}&country=${currentCountry}` 
+        : `/market/movers?country=${currentCountry}`;
       const res = await axios.get(url);
       setMoversData(res.data);
     } catch (err) {
@@ -474,7 +475,7 @@ function App() {
           
           {/* Query Bar */}
           <div className="p-4 pb-0 shrink-0">
-            <QueryBar onResults={handleQueryResults} onLoading={setLoading} />
+            <QueryBar onResults={handleQueryResults} onLoading={setLoading} country={filters.country || 'India'} />
           </div>
           
           <div className="flex-1 p-4 pt-4 overflow-y-auto custom-scrollbar">

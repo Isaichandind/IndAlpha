@@ -84,10 +84,17 @@ export const ScreenerTable: React.FC<ScreenerTableProps> = ({ stocks, loading, o
   const handleRowClick = (stock: StockData) => {
     if (onSelectStock) {
       const symbol = stock.ticker.includes('.') ? stock.ticker : `${stock.ticker}.NS`;
+      let exchange = 'NSE';
+      if (symbol.endsWith('.HK')) exchange = 'HKEX';
+      else if (symbol.endsWith('.SS')) exchange = 'SSE';
+      else if (symbol.endsWith('.SZ')) exchange = 'SZSE';
+      else if (symbol.endsWith('.BO')) exchange = 'BSE';
+      else if (stock.country === 'USA') exchange = 'NASDAQ/NYSE';
+      
       onSelectStock({
         symbol,
         name: stock.company_name,
-        exchange: 'NSE',
+        exchange,
       });
     }
   };

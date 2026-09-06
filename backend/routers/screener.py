@@ -924,23 +924,24 @@ FIELD_MAP = {
 _MAX_QUERY_LENGTH = 500
 _MAX_QUERY_CONDITIONS = 10
 
-def _parse_query_to_filters(query_str: str, db: Session):
+def _parse_query_to_filters(query_str: str, db: Session, country: str = "India"):
     """Parse a text query like 'ROCE > 20 AND PE < 30' into SQLAlchemy filters."""
     query_str = query_str.strip()
-    if not query_str:
-        return db.query(models.Stock).outerjoin(models.Fundamentals).outerjoin(models.Technicals).options(
-            joinedload(models.Stock.fundamentals),
-            joinedload(models.Stock.technicals)
-        )
-    
-    # Input length validation to prevent abuse
-    if len(query_str) > _MAX_QUERY_LENGTH:
-        raise HTTPException(status_code=422, detail=f"Query too long (max {_MAX_QUERY_LENGTH} characters)")
     
     base_query = db.query(models.Stock).outerjoin(models.Fundamentals).outerjoin(models.Technicals).options(
         joinedload(models.Stock.fundamentals),
         joinedload(models.Stock.technicals)
     )
+    
+    if country and country != 'Global':
+        base_query = base_query.filter(models.Stock.country == country)
+
+    if not query_str:
+        return base_query
+    
+    # Input length validation to prevent abuse
+    if len(query_str) > _MAX_QUERY_LENGTH:
+        raise HTTPException(status_code=422, detail=f"Query too long (max {_MAX_QUERY_LENGTH} characters)")
     
     # Split on AND (case insensitive)
     conditions = _re.split(r'\s+AND\s+', query_str, flags=_re.IGNORECASE)
@@ -990,9 +991,9 @@ def _parse_query_to_filters(query_str: str, db: Session):
     return base_query
 
 @router.get("/screener/query")
-def query_screener(q: str = "", db: Session = Depends(get_db)):
+def query_screener(q: str = "", country: str = "India", db: Session = Depends(get_db)):
     """Text-based screener query endpoint."""
-    filtered_query = _parse_query_to_filters(q, db)
+    filtered_query = _parse_query_to_filters(q, db, country)
     stocks = filtered_query.all()
     
     response = []
@@ -1024,11 +1025,18 @@ def query_screener(q: str = "", db: Session = Depends(get_db)):
     return response
 
 @router.get("/market/movers")
-def get_market_movers(date: str = None, db: Session = Depends(get_db)):
+def get_market_movers(date: str = None, country: str = "India", db: Session = Depends(get_db)):
     if date:
         # Historical movers
-        gainers_dp = db.query(models.DailyPerformance).filter(models.DailyPerformance.date == date).order_by(models.DailyPerformance.change_pct.desc()).limit(5).all()
-        losers_dp = db.query(models.DailyPerformance).filter(models.DailyPerformance.date == date).order_by(models.DailyPerformance.change_pct.asc()).limit(5).all()
+        gainers_dp = db.query(models.DailyPerformance).join(models.Stock).filter(
+            models.DailyPerformance.date == date,
+            models.Stock.country == country
+        ).order_by(models.DailyPerformance.change_pct.desc()).limit(5).all()
+        
+        losers_dp = db.query(models.DailyPerformance).join(models.Stock).filter(
+            models.DailyPerformance.date == date,
+            models.Stock.country == country
+        ).order_by(models.DailyPerformance.change_pct.asc()).limit(5).all()
         
         return {
             "gainers": [{"symbol": dp.stock.ticker, "name": dp.stock.company_name, "ltp": dp.close_price, "change_pct": dp.change_pct} for dp in gainers_dp if dp.stock],
@@ -1036,8 +1044,8 @@ def get_market_movers(date: str = None, db: Session = Depends(get_db)):
         }
     else:
         # Current live movers
-        gainers = db.query(models.Stock).order_by(models.Stock.change_pct.desc()).limit(5).all()
-        losers = db.query(models.Stock).order_by(models.Stock.change_pct.asc()).limit(5).all()
+        gainers = db.query(models.Stock).filter(models.Stock.country == country).order_by(models.Stock.change_pct.desc()).limit(5).all()
+        losers = db.query(models.Stock).filter(models.Stock.country == country).order_by(models.Stock.change_pct.asc()).limit(5).all()
         return {
             "gainers": [{"symbol": s.ticker, "name": s.company_name, "ltp": s.ltp, "change_pct": s.change_pct} for s in gainers],
             "losers": [{"symbol": s.ticker, "name": s.company_name, "ltp": s.ltp, "change_pct": s.change_pct} for s in losers]
