@@ -6,7 +6,7 @@ import type { SelectedStock } from '../types';
 export interface SearchResult {
   symbol: string;
   name: string;
-  exchange: 'NSE' | 'BSE';
+  exchange: string;
   type: string;
   score: number;
 }
@@ -178,7 +178,9 @@ export function GlobalSearch({ onAddStock, onViewChart }: GlobalSearchProps) {
                         <span className={`text-[9px] px-1 rounded-sm font-bold border ${
                           result.exchange === 'NSE' 
                             ? 'bg-blue-900/30 text-blue-400 border-blue-800/50' 
-                            : 'bg-orange-900/30 text-orange-400 border-orange-800/50'
+                            : result.exchange === 'BSE'
+                              ? 'bg-orange-900/30 text-orange-400 border-orange-800/50'
+                              : 'bg-emerald-900/30 text-emerald-400 border-emerald-800/50'
                         }`}>{result.exchange}</span>
                       </div>
                     </div>

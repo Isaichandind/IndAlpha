@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatCurrency } from '../utils/format';
 import { TrendingUp, TrendingDown, Calendar } from 'lucide-react';
 import type { MarketMoversData } from '../types';
 
@@ -69,7 +70,7 @@ export const MarketMovers: React.FC<MarketMoversProps> = ({ data, loading, onDat
                   {stock.symbol.replace('.NS', '')}
                 </span>
                 <div className="flex items-center justify-center gap-1.5 text-[11px] font-mono mt-1">
-                  <span className="text-indalpha-muted">₹{stock.ltp.toLocaleString('en-IN', { maximumFractionDigits: 1 })}</span>
+                  <span className="text-indalpha-muted">{formatCurrency(stock.ltp, undefined, 1, 1)}</span>
                   <span className="text-indalpha-green font-semibold">
                     +{stock.change_pct.toFixed(1)}%
                   </span>
@@ -95,7 +96,7 @@ export const MarketMovers: React.FC<MarketMoversProps> = ({ data, loading, onDat
                   {stock.symbol.replace('.NS', '')}
                 </span>
                 <div className="flex items-center justify-center gap-1.5 text-[11px] font-mono mt-1">
-                  <span className="text-indalpha-muted">₹{stock.ltp.toLocaleString('en-IN', { maximumFractionDigits: 1 })}</span>
+                  <span className="text-indalpha-muted">{formatCurrency(stock.ltp, undefined, 1, 1)}</span>
                   <span className="text-indalpha-red font-semibold">
                     {stock.change_pct.toFixed(1)}%
                   </span>

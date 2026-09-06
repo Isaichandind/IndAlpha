@@ -12,6 +12,9 @@ class Stock(Base):
     change_pct = Column(Float, default=0.0)
     market_cap = Column(Float)
     last_updated_date = Column(String, nullable=True)
+    country = Column(String, default="India")
+    asset_type = Column(String, default="EQUITY")
+    currency = Column(String, default="INR")
 
     fundamentals = relationship("Fundamentals", back_populates="stock", uselist=False)
     technicals = relationship("Technicals", back_populates="stock", uselist=False)

@@ -532,8 +532,77 @@ def get_stock_detail(ticker: str, db: Session = Depends(get_db)):
         stock = db.query(models.Stock).filter(
             (models.Stock.ticker == f"{ticker}.NS") | (models.Stock.ticker == f"{ticker}.BO")
         ).first()
+        
     if not stock:
-        raise HTTPException(status_code=404, detail="Stock not found")
+        try:
+            import yfinance as yf
+            from datetime import datetime
+            
+            yq = yf.Ticker(ticker)
+            info = yq.info
+            
+            if not info or ('symbol' not in info and 'shortName' not in info):
+                raise HTTPException(status_code=404, detail="Stock not found globally")
+                
+            market_cap = info.get('marketCap') or info.get('navPrice') or 0
+            if market_cap > 0:
+                market_cap = market_cap / 10000000 # Convert to Cr
+                
+            currency = info.get('currency', 'USD')
+            asset_type = info.get('quoteType', 'EQUITY')
+            country = info.get('country', 'Unknown')
+            company_name = info.get('shortName') or info.get('longName') or ticker
+            sector = info.get('sector', 'Unknown')
+            ltp = info.get('currentPrice') or info.get('navPrice') or info.get('previousClose') or 0.0
+            
+            stock = models.Stock(
+                ticker=ticker,
+                company_name=company_name,
+                sector=sector,
+                ltp=ltp,
+                change_pct=0.0,
+                market_cap=market_cap,
+                last_updated_date=datetime.now().strftime("%Y-%m-%d"),
+                country=country,
+                asset_type=asset_type,
+                currency=currency
+            )
+            
+            fund = models.Fundamentals(
+                ticker=ticker,
+                roce=info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else 0,
+                roe=info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else 0,
+                pe_ratio=info.get('trailingPE', 0),
+                debt_to_equity=info.get('debtToEquity', 0) / 100 if info.get('debtToEquity') else 0,
+                promoter_holding=info.get('heldPercentInsiders', 0) * 100 if info.get('heldPercentInsiders') else 0,
+                pledged_promoter=0,
+                eps=info.get('trailingEps', 0),
+                dividend_yield=info.get('dividendYield', 0) * 100 if info.get('dividendYield') else 0,
+                pb_ratio=info.get('priceToBook', 0),
+                book_value=info.get('bookValue', 0),
+                last_updated_date=datetime.now().strftime("%Y-%m-%d")
+            )
+            
+            tech = models.Technicals(
+                ticker=ticker,
+                rsi_14=50.0,
+                ema_50=ltp,
+                ema_200=ltp,
+                delivery_volume=50.0,
+                supertrend_bullish=True
+            )
+            
+            db.add(stock)
+            db.add(fund)
+            db.add(tech)
+            db.commit()
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"JIT fetch failed for {ticker}: {e}")
+            raise HTTPException(status_code=404, detail="Stock not found")
+            
     return stock
 
 @router.get("/screener/search")
@@ -553,18 +622,20 @@ def search_stocks(q: str, db: Session = Depends(get_db)):
 
     for stock in local_query:
         exchange = 'NSE' if stock.ticker.endswith('.NS') else 'BSE'
+        if getattr(stock, 'country', 'India') != 'India':
+            exchange = getattr(stock, 'country', exchange)
         results.append({
             'symbol': stock.ticker,
             'name': stock.company_name,
             'exchange': exchange,
-            'type': 'EQUITY',
+            'type': getattr(stock, 'asset_type', 'EQUITY'),
             'score': 1000  # High score for known seeded stocks
         })
         seen.add(stock.ticker)
 
     # 2. Yahoo Finance Search (Fallback)
     if len(q) >= 2 and len(results) < 10:
-        url = f"https://query2.finance.yahoo.com/v1/finance/search?q={q}&quotesCount=10&country=India"
+        url = f"https://query2.finance.yahoo.com/v1/finance/search?q={q}&quotesCount=10"
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
@@ -576,12 +647,11 @@ def search_stocks(q: str, db: Session = Depends(get_db)):
             if 'quotes' in data:
                 for quote in data['quotes']:
                     symbol = quote.get('symbol', '')
-                    if (symbol.endswith('.NS') or symbol.endswith('.BO')) and symbol not in seen:
-                        exchange = 'NSE' if symbol.endswith('.NS') else 'BSE'
+                    if symbol and symbol not in seen:
                         results.append({
                             'symbol': symbol,
                             'name': quote.get('shortname', symbol),
-                            'exchange': exchange,
+                            'exchange': quote.get('exchange', 'Unknown'),
                             'type': quote.get('quoteType', 'EQUITY'),
                             'score': quote.get('score', 0)
                         })

@@ -11,6 +11,9 @@ export interface StockData {
   ltp: number;
   market_cap: number;
   last_updated_date?: string;
+  country?: string;
+  asset_type?: string;
+  currency?: string;
   alpha_score: number;
   roce: number;
   roe: number;
@@ -102,6 +105,7 @@ export interface SelectedStock {
   symbol: string;
   name: string;
   exchange: string;
+  type?: string;
 }
 
 export interface MoverStock {
@@ -123,6 +127,9 @@ export interface FullStockProfile {
   ltp: number;
   market_cap: number;
   last_updated_date?: string;
+  country?: string;
+  asset_type?: string;
+  currency?: string;
   fundamentals: {
     roce: number;
     roe: number;

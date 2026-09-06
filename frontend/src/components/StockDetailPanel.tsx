@@ -7,6 +7,7 @@ import { HoldingsView } from './HoldingsView';
 import { FundamentalAnalysis } from './FundamentalAnalysis';
 import { SmartLoader } from './SmartLoader';
 import type { CandleData, StockQuote, SelectedStock, FullStockProfile, SectorBenchmarks, CompanyAbout } from '../types';
+import { formatCurrency } from '../utils/format';
 
 interface StockDetailPanelProps {
   stock: SelectedStock | null;
@@ -165,7 +166,7 @@ export function StockDetailPanel({ stock, onClose, alphaFundamentalWeight = 65 }
             <div className="flex items-center gap-4">
               <div className="text-right">
                 <div className="text-xl font-bold text-indalpha-text font-mono">
-                  ₹{quote.ltp.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  {formatCurrency(quote.ltp, quote.currency, 2, 2)}
                 </div>
                 <div className={`text-sm font-mono flex items-center justify-end gap-1 ${isPositive ? 'text-indalpha-green' : 'text-indalpha-red'}`}>
                   {isPositive ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
@@ -234,11 +235,11 @@ export function StockDetailPanel({ stock, onClose, alphaFundamentalWeight = 65 }
               {/* Quote stats */}
               {quote && (
                 <div className="grid grid-cols-3 gap-3 pt-2">
-                  <StatCard label="Prev Close" value={quote.prev_close !== undefined && quote.prev_close !== null ? `₹${quote.prev_close.toLocaleString('en-IN')}` : 'N/A'} />
-                  <StatCard label="Day Range" value={quote.day_low && quote.day_high ? `₹${quote.day_low} — ₹${quote.day_high}` : 'N/A'} />
-                  <StatCard label="Market Cap" value={quote.market_cap > 0 ? `₹${(quote.market_cap / 10000000).toLocaleString('en-IN', {maximumFractionDigits: 0})} Cr` : 'N/A'} />
-                  <StatCard label="52W High" value={quote.year_high ? `₹${quote.year_high.toLocaleString('en-IN')}` : 'N/A'} highlight="green" />
-                  <StatCard label="52W Low" value={quote.year_low ? `₹${quote.year_low.toLocaleString('en-IN')}` : 'N/A'} highlight="red" />
+                  <StatCard label="Prev Close" value={quote.prev_close !== undefined && quote.prev_close !== null ? formatCurrency(quote.prev_close, quote.currency, 2, 2) : 'N/A'} />
+                  <StatCard label="Day Range" value={quote.day_low && quote.day_high ? `${formatCurrency(quote.day_low, quote.currency)} — ${formatCurrency(quote.day_high, quote.currency)}` : 'N/A'} />
+                  <StatCard label="Market Cap" value={quote.market_cap > 0 ? `${formatCurrency(quote.market_cap, quote.currency, 0, 0)} ${quote.currency === 'INR' ? 'Cr' : 'M'}` : 'N/A'} />
+                  <StatCard label="52W High" value={quote.year_high ? formatCurrency(quote.year_high, quote.currency, 2, 2) : 'N/A'} highlight="green" />
+                  <StatCard label="52W Low" value={quote.year_low ? formatCurrency(quote.year_low, quote.currency, 2, 2) : 'N/A'} highlight="red" />
                   <StatCard label="Exchange" value={stock.exchange} />
                 </div>
               )}
@@ -335,7 +336,7 @@ export function StockDetailPanel({ stock, onClose, alphaFundamentalWeight = 65 }
                           <>
                             <MetricCard 
                               title="Graham Number (Fair Value)" 
-                              value={grahamNumber > 0 ? `₹${grahamNumber.toFixed(2)}` : 'N/A'} 
+                              value={grahamNumber > 0 ? formatCurrency(grahamNumber, profile?.currency, 2, 2) : 'N/A'}
                               subtitle="Defensive Intrinsic Value"
                               good={quote ? quote.ltp < grahamNumber : undefined}
                             />
@@ -468,9 +469,9 @@ export function StockDetailPanel({ stock, onClose, alphaFundamentalWeight = 65 }
                         const fund = profile.fundamentals || {} as any;
                         return (
                           <>
-                            <MetricCard title="EPS" value={fund.eps !== undefined ? `₹${fund.eps.toFixed(2)}` : 'N/A'} subtitle="Earnings per Share" good={fund.eps > 0} />
-                            <MetricCard title="Div Yield" value={fund.dividend_yield > 0 ? `${fund.dividend_yield.toFixed(2)}%` : '-'} subtitle="Dividend Yield" good={fund.dividend_yield > 1} />
-                            <MetricCard title="Book Value" value={fund.book_value > 0 ? `₹${fund.book_value.toFixed(2)}` : '-'} subtitle="Book Value" />
+                            <MetricCard title="EPS" value={fund.eps !== undefined ? formatCurrency(fund.eps, profile?.currency, 2, 2) : 'N/A'} subtitle="Earnings per Share" good={fund.eps > 0} />
+                            <MetricCard title="Div Yield" value={fund.dividend_yield > 0 ? `${fund.dividend_yield.toFixed(2)}%` : '-'} subtitle="Dividend" good={fund.dividend_yield > 1.5} />
+                            <MetricCard title="Book Value" value={fund.book_value > 0 ? formatCurrency(fund.book_value, profile?.currency, 2, 2) : '-'} subtitle="Book Value" />
                             <MetricCard title="P/B Ratio" value={fund.pb_ratio > 0 ? fund.pb_ratio.toFixed(2) : '-'} subtitle="Price to Book" good={fund.pb_ratio > 0 && fund.pb_ratio < 3} />
                           </>
                         );
@@ -515,11 +516,11 @@ export function StockDetailPanel({ stock, onClose, alphaFundamentalWeight = 65 }
                             <div className="grid grid-cols-2 gap-4 pt-2">
                               <div className="bg-indalpha-card/50 p-3 rounded-lg border border-indalpha-border">
                                 <div className="text-[10px] text-indalpha-muted font-bold uppercase tracking-wider mb-1">50-Day EMA</div>
-                                <div className="text-sm font-mono font-bold text-indalpha-text">{tech.ema_50 !== undefined ? `₹${tech.ema_50.toLocaleString('en-IN')}` : 'N/A'}</div>
+                                <div className="text-sm font-mono font-bold text-indalpha-text">{tech.ema_50 !== undefined ? formatCurrency(tech.ema_50, profile?.currency, 2, 2) : 'N/A'}</div>
                               </div>
                               <div className="bg-indalpha-card/50 p-3 rounded-lg border border-indalpha-border">
                                 <div className="text-[10px] text-indalpha-muted font-bold uppercase tracking-wider mb-1">200-Day EMA</div>
-                                <div className="text-sm font-mono font-bold text-indalpha-text">{tech.ema_200 !== undefined ? `₹${tech.ema_200.toLocaleString('en-IN')}` : 'N/A'}</div>
+                                <div className="text-sm font-mono font-bold text-indalpha-text">{tech.ema_200 !== undefined ? formatCurrency(tech.ema_200, profile?.currency, 2, 2) : 'N/A'}</div>
                               </div>
                             </div>
 

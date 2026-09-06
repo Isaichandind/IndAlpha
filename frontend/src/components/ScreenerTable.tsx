@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Settings2, Check } from 'lucide-react';
 import type { StockData, SelectedStock } from '../types';
 import { SmartLoader } from './SmartLoader';
+import { formatCurrency } from '../utils/format';
 
 interface ScreenerTableProps {
   stocks: StockData[];
@@ -34,7 +35,7 @@ type ColumnKey = 'rank' | 'ticker' | 'ltp' | 'change_pct' | 'mcap' | 'alpha' | '
 const ALL_COLUMNS: { key: ColumnKey; label: string; defaultVisible: boolean }[] = [
   { key: 'rank', label: 'Rank', defaultVisible: true },
   { key: 'ticker', label: 'Ticker & Company', defaultVisible: true },
-  { key: 'ltp', label: 'LTP (₹)', defaultVisible: true },
+  { key: 'ltp', label: 'LTP', defaultVisible: true },
   { key: 'change_pct', label: '1D Change %', defaultVisible: true },
   { key: 'mcap', label: 'Market Cap', defaultVisible: true },
   { key: 'alpha', label: 'Alpha Score', defaultVisible: true },
@@ -179,8 +180,8 @@ export const ScreenerTable: React.FC<ScreenerTableProps> = ({ stocks, loading, o
                   </td>
                 )}
                 {visibleColumns.has('ltp') && (
-                  <td className="px-6 py-4 font-semibold text-indalpha-text">
-                    ₹{stock.ltp.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  <td className="px-6 py-4 text-indalpha-text font-mono font-medium">
+                    {formatCurrency(stock.ltp, stock.currency, 2, 2)}
                   </td>
                 )}
                 {visibleColumns.has('change_pct') && (
@@ -193,8 +194,8 @@ export const ScreenerTable: React.FC<ScreenerTableProps> = ({ stocks, loading, o
                   </td>
                 )}
                 {visibleColumns.has('mcap') && (
-                  <td className="px-6 py-4 text-indalpha-muted">
-                    {stock.market_cap > 0 ? `₹${stock.market_cap.toLocaleString('en-IN', { maximumFractionDigits: 0 })} Cr` : <span className="text-gray-600 italic">N/A</span>}
+                  <td className="px-6 py-4 text-indalpha-text font-mono">
+                    {stock.market_cap > 0 ? `${formatCurrency(stock.market_cap, stock.currency, 0, 0)} ${stock.country === 'India' ? 'Cr' : 'M'}` : <span className="text-gray-600 italic">N/A</span>}
                   </td>
                 )}
                 {visibleColumns.has('alpha') && (
@@ -209,8 +210,8 @@ export const ScreenerTable: React.FC<ScreenerTableProps> = ({ stocks, loading, o
                   </td>
                 )}
                 {visibleColumns.has('pe') && <td className="px-6 py-4 text-indalpha-text font-mono">{stock.pe_ratio > 0 ? stock.pe_ratio.toFixed(2) : '-'}</td>}
-                {visibleColumns.has('eps') && <td className="px-6 py-4 text-indalpha-text font-mono">{stock.eps > 0 ? `₹${stock.eps.toFixed(2)}` : '-'}</td>}
                 {visibleColumns.has('pb') && <td className="px-6 py-4 text-indalpha-text font-mono">{stock.pb_ratio > 0 ? stock.pb_ratio.toFixed(2) : '-'}</td>}
+                {visibleColumns.has('eps') && <td className="px-6 py-4 text-indalpha-text font-mono">{stock.eps > 0 ? formatCurrency(stock.eps, stock.currency, 2, 2) : '-'}</td>}
                 {visibleColumns.has('div') && <td className="px-6 py-4 text-indalpha-text font-mono">{stock.dividend_yield > 0 ? `${stock.dividend_yield.toFixed(2)}%` : '-'}</td>}
                 {visibleColumns.has('de') && <td className="px-6 py-4 text-indalpha-text font-mono">{stock.debt_to_equity.toFixed(2)}</td>}
                 {visibleColumns.has('ph') && <td className="px-6 py-4 text-indalpha-text font-mono">{stock.promoter_holding.toFixed(2)}%</td>}
@@ -224,7 +225,7 @@ export const ScreenerTable: React.FC<ScreenerTableProps> = ({ stocks, loading, o
                   </td>
                 )}
                 
-                {visibleColumns.has('bv') && <td className="px-6 py-4 text-indalpha-text font-mono">{stock.book_value > 0 ? `₹${stock.book_value.toFixed(2)}` : '-'}</td>}
+                {visibleColumns.has('bv') && <td className="px-6 py-4 text-indalpha-text font-mono">{stock.book_value > 0 ? formatCurrency(stock.book_value, stock.currency, 2, 2) : '-'}</td>}
                 
                 {visibleColumns.has('tag') && (
                   <td className="px-6 py-4">

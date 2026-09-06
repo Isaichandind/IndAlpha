@@ -45,6 +45,9 @@ class StockBase(BaseModel):
     ltp: float
     market_cap: float
     last_updated_date: Optional[str] = None
+    country: str = "India"
+    asset_type: str = "EQUITY"
+    currency: str = "INR"
 
     class Config:
         from_attributes = True
