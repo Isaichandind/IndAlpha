@@ -12,7 +12,7 @@ def _safe(val, default=0.0):
     except (TypeError, ValueError):
         return default
 
-def calculate_alpha_score(stock, fundamentals, technicals, fundamental_weight: int = 65):
+def calculate_alpha_score(stock, fundamentals, technicals, fundamental_weight: int = 65, country: str = "India"):
     if not fundamentals or not technicals:
         return 0.0
 
@@ -30,49 +30,53 @@ def calculate_alpha_score(stock, fundamentals, technicals, fundamental_weight: i
     ltp = _safe(stock.ltp)
     mcap = _safe(stock.market_cap)
 
-    # --- Fundamental Score (Max 100) ---
-    # ROCE: > 20% is excellent
+    # Base Scores (0-100)
     roce_score = min(roce / 25.0 * 100, 100) if roce > 0 else 0
-    # ROE: > 15% is excellent
     roe_score = min(roe / 20.0 * 100, 100) if roe > 0 else 0
-    # PE Ratio: Lower is better (ideal < 30, penalty if > 50)
     pe_score = max(100 - (pe / 60.0 * 100), 0) if pe > 0 else 100
-    # Debt to Equity: Lower is better (ideal < 0.5)
     debt_score = max(100 - (de * 100), 0)
-    # Promoter Holding: Higher is better (ideal > 50%)
     promoter_score = min(promoter * 1.5, 100)
-    # Pledged Promoter: Lower is better (0 is ideal)
     pledge_score = max(100 - (pledged * 10), 0)
 
-    fundamental_score = (roce_score * 0.25 + roe_score * 0.2 + pe_score * 0.2 + 
-                         debt_score * 0.15 + promoter_score * 0.1 + pledge_score * 0.1)
+    # Adjust weights based on region
+    if country == "USA":
+        # US Market: De-emphasize promoter holding (institutions rule). Focus on profitability & technicals.
+        fundamental_score = (roce_score * 0.35 + roe_score * 0.3 + pe_score * 0.2 + 
+                             debt_score * 0.15)
+        # Momentum (RSI) is more important in US tech
+        rsi_score = max(100 - abs(rsi - 60) * 2, 0)
+        tech_weight_modifier = 1.1 # US respects momentum more
+    elif country == "China":
+        # China Market: Higher state-debt tolerance, pure valuation focus.
+        fundamental_score = (roce_score * 0.3 + roe_score * 0.25 + pe_score * 0.3 + 
+                             debt_score * 0.05 + promoter_score * 0.1)
+        rsi_score = max(100 - abs(rsi - 50) * 2.5, 0) # Mean reversion
+        tech_weight_modifier = 1.0
+    else:
+        # India Market (Default): Strict on promoter holding, debt, and pledges
+        fundamental_score = (roce_score * 0.25 + roe_score * 0.2 + pe_score * 0.2 + 
+                             debt_score * 0.15 + promoter_score * 0.1 + pledge_score * 0.1)
+        rsi_score = max(100 - abs(rsi - 60) * 2, 0)
+        tech_weight_modifier = 1.0
 
     # --- Technical Score (Max 100) ---
-    # Momentum (RSI) - Sweet spot around 60
-    rsi_score = max(100 - abs(rsi - 60) * 2, 0)
-    
-    # Moving Averages
     ema_50_score = 15 if ltp > ema_50 and ema_50 > 0 else 0
     ema_200_score = 15 if ltp > ema_200 and ema_200 > 0 else 0
-    
-    # Delivery Volume - Higher is better
     delivery_score = min(delivery / 70.0 * 100, 100) * 0.5
-    
-    # Supertrend
     supertrend_score = 20 if technicals.supertrend_bullish else 0
     
-    technical_score = rsi_score * 0.3 + ema_50_score + ema_200_score + delivery_score + supertrend_score
-    technical_score = min(technical_score, 100)
+    technical_score = (rsi_score * 0.3 + ema_50_score + ema_200_score + 
+                       delivery_score + supertrend_score)
+    technical_score = min(technical_score * tech_weight_modifier, 100)
 
     # Composite Alpha Score
     tech_weight = 100 - fundamental_weight
     composite_score = (fundamental_score * (fundamental_weight / 100.0)) + (technical_score * (tech_weight / 100.0))
     
     # Professional Data Quality Penalty
-    # If Market Cap is 0 (missing data from API/Exchange), heavily penalize the stock 
-    # to drop it from the top screener results since its fundamentals are unreliable.
+    # If Market Cap is 0, penalize heavily.
     if mcap <= 0:
-        composite_score = composite_score * 0.25 # 75% penalty
+        composite_score = composite_score * 0.25
     
     return round(composite_score)
 

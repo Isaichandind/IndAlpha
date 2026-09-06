@@ -52,6 +52,7 @@ export interface ScreenerFilters {
   sort_by?: string;
   sort_order?: 'asc' | 'desc';
   alpha_fundamental_weight?: number;
+  country?: string;
 }
 
 export interface PaginatedStockResponse {

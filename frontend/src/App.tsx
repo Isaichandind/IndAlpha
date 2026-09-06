@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from './api';
-import { Save, Bell, RefreshCw, Settings, Menu, List, X, Search } from 'lucide-react';
+import { Save, Bell, RefreshCw, Settings, Menu, List, X, Search, Globe, ChevronDown } from 'lucide-react';
 import { SettingsModal } from './components/SettingsModal';
 import { ScreenerTable } from './components/ScreenerTable';
 import { FilterSidebar } from './components/FilterSidebar';
@@ -50,6 +50,7 @@ function App() {
   const [moversLoading, setMoversLoading] = useState<boolean>(true);
   const [tradingDates, setTradingDates] = useState<string[]>([]);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [isRegionDropdownOpen, setIsRegionDropdownOpen] = useState(false);
   
   // Stock detail panel state
   const [selectedStock, setSelectedStock] = useState<SelectedStock | null>(null);
@@ -200,7 +201,8 @@ function App() {
 
   const fetchIndices = async () => {
     try {
-      const res = await axios.get('/market/indices');
+      const countryParam = filters.country || 'India';
+      const res = await axios.get(`/market/indices?country=${countryParam}`);
       setIndices(res.data);
     } catch (err) {
       console.error(err);
@@ -319,6 +321,47 @@ function App() {
           <div className="md:hidden">
             <GlobalSearch onAddStock={handleAddStock} onViewChart={handleViewChart} />
           </div>
+          
+          {/* Region Selector */}
+          <div className="relative">
+            <button 
+              onClick={() => setIsRegionDropdownOpen(!isRegionDropdownOpen)}
+              className="flex items-center gap-1.5 border border-indalpha-border bg-indalpha-card text-indalpha-text px-3 py-1.5 rounded-full text-xs font-medium hover:bg-indalpha-card/80 transition-colors"
+            >
+              <Globe className="w-3.5 h-3.5 text-indalpha-green" />
+              <span className="hidden sm:inline">{filters.country || 'India'}</span>
+              <ChevronDown className="w-3.5 h-3.5 text-indalpha-muted" />
+            </button>
+            {isRegionDropdownOpen && (
+              <div className="absolute top-full right-0 mt-2 w-36 bg-indalpha-card border border-indalpha-border rounded-lg shadow-xl overflow-hidden z-50">
+                {['India', 'USA', 'China'].map((region) => (
+                  <button
+                    key={region}
+                    onClick={() => {
+                      setFilters(prev => ({ ...prev, country: region, page: 1 }));
+                      setIsRegionDropdownOpen(false);
+                      // fetchIndices is triggered indirectly or we can call it here. 
+                      // actually we should call it directly since filters.country isn't in its dependency array
+                      setTimeout(() => {
+                        const newCountry = region;
+                        axios.get(`/market/indices?country=${newCountry}`).then(res => setIndices(res.data)).catch(console.error);
+                      }, 0);
+                    }}
+                    className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
+                      (filters.country || 'India') === region 
+                        ? 'bg-indalpha-green/10 text-indalpha-green font-medium' 
+                        : 'text-indalpha-text hover:bg-indalpha-dark'
+                    }`}
+                  >
+                    {region === 'India' && '🇮🇳 India'}
+                    {region === 'USA' && '🇺🇸 USA'}
+                    {region === 'China' && '🇨🇳 China'}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <button 
             onClick={syncMarketData}
             disabled={syncing}

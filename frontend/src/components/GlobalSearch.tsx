@@ -72,11 +72,17 @@ export function GlobalSearch({ onAddStock, onViewChart }: GlobalSearchProps) {
       const res = await axios.get('/screener/search', {
         params: { q: searchQuery }
       });
-      setResults(res.data);
+      if (Array.isArray(res.data)) {
+        setResults(res.data);
+      } else {
+        console.warn("Search returned non-array data:", res.data);
+        setResults([]);
+      }
       setIsOpen(true);
       setSelectedIndex(-1);
     } catch (err) {
       console.error('Search error:', err);
+      setResults([]);
     } finally {
       setIsLoading(false);
     }
@@ -120,7 +126,8 @@ export function GlobalSearch({ onAddStock, onViewChart }: GlobalSearchProps) {
     setIsOpen(false);
   };
 
-  const getTypeBadge = (type: string) => {
+  const getTypeBadge = (type: string | null | undefined) => {
+    if (!type) return { label: 'UNK', color: 'bg-indalpha-card text-indalpha-muted border-indalpha-border' };
     const t = type.toUpperCase();
     if (t === 'EQUITY') return { label: 'EQ', color: 'bg-blue-900/30 text-blue-400 border-blue-800/50' };
     if (t === 'ETF') return { label: 'ETF', color: 'bg-purple-900/30 text-purple-400 border-purple-800/50' };

@@ -101,6 +101,7 @@ class ScreenerFilter(BaseModel):
     sort_order: Optional[str] = 'desc'
     
     alpha_fundamental_weight: Optional[int] = 65
+    country: Optional[str] = 'India'
 
 class PaginatedStockResponse(BaseModel):
     total_count: int

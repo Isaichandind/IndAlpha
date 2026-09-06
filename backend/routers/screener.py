@@ -18,13 +18,47 @@ import yfinance as yf
 from yahooquery import Ticker as YQTicker
 import requests
 @router.get("/market/indices")
-def get_market_indices():
-    symbols = {
-        "NIFTY 50": "^NSEI",
-        "SENSEX": "^BSESN",
-        "BANK NIFTY": "^NSEBANK",
-        "INDIA VIX": "^INDIAVIX"
-    }
+def get_market_indices(country: str = "India"):
+    if country == "USA":
+        symbols = {
+            "S&P 500": "^GSPC",
+            "NASDAQ": "^IXIC",
+            "DOW JONES": "^DJI",
+            "VIX": "^VIX"
+        }
+        fallback = [
+            {"name": "S&P 500", "value": 5460.48, "change": 0.5},
+            {"name": "NASDAQ", "value": 17688.88, "change": 0.8},
+            {"name": "DOW JONES", "value": 38589.16, "change": 0.1},
+            {"name": "VIX", "value": 12.66, "change": -2.0}
+        ]
+    elif country == "China":
+        symbols = {
+            "HANG SENG": "^HSI",
+            "SHANGHAI COMP": "000001.SS",
+            "SZSE COMP": "399001.SZ",
+            "CSI 300": "000300.SS"
+        }
+        fallback = [
+            {"name": "HANG SENG", "value": 17936.12, "change": -0.9},
+            {"name": "SHANGHAI COMP", "value": 3028.05, "change": 0.1},
+            {"name": "SZSE COMP", "value": 9206.24, "change": -0.2},
+            {"name": "CSI 300", "value": 3540.32, "change": 0.4}
+        ]
+    else:
+        # Default India
+        symbols = {
+            "NIFTY 50": "^NSEI",
+            "SENSEX": "^BSESN",
+            "BANK NIFTY": "^NSEBANK",
+            "INDIA VIX": "^INDIAVIX"
+        }
+        fallback = [
+            {"name": "NIFTY 50", "value": 23465.60, "change": 0.82},
+            {"name": "SENSEX", "value": 77042.82, "change": 0.76},
+            {"name": "BANK NIFTY", "value": 50234.15, "change": -0.34},
+            {"name": "INDIA VIX", "value": 13.42, "change": -2.10}
+        ]
     
     response = []
     try:
@@ -40,14 +74,8 @@ def get_market_indices():
                 "change": round(change_pct, 2)
             })
     except Exception as e:
-        print(f"Error fetching indices: {e}")
-        # Fallback to mock data if yfinance fails
-        response = [
-            {"name": "NIFTY 50", "value": 23465.60, "change": 0.82},
-            {"name": "SENSEX", "value": 77042.82, "change": 0.76},
-            {"name": "BANK NIFTY", "value": 50234.15, "change": -0.34},
-            {"name": "INDIA VIX", "value": 13.42, "change": -2.10}
-        ]
+        print(f"Error fetching indices for {country}: {e}")
+        response = fallback
     return response
 
 @router.post("/screener/filter", response_model=schemas.PaginatedStockResponse)
@@ -56,6 +84,9 @@ def filter_stocks(filters: schemas.ScreenerFilter, db: Session = Depends(get_db)
         joinedload(models.Stock.fundamentals),
         joinedload(models.Stock.technicals)
     )
+
+    if filters.country and filters.country != 'Global':
+        query = query.filter(models.Stock.country == filters.country)
 
     if filters.performance_date:
         query = query.join(models.DailyPerformance).filter(models.DailyPerformance.date == filters.performance_date)
@@ -162,7 +193,8 @@ def filter_stocks(filters: schemas.ScreenerFilter, db: Session = Depends(get_db)
 
     response = []
     for stock in stocks:
-        alpha_score = calculate_alpha_score(stock, stock.fundamentals, stock.technicals, filters.alpha_fundamental_weight or 65)
+        country_param = filters.country if filters.country and filters.country != 'Global' else "India"
+        alpha_score = calculate_alpha_score(stock, stock.fundamentals, stock.technicals, filters.alpha_fundamental_weight or 65, country_param)
         response.append(schemas.StockListResponse(
             ticker=stock.ticker,
             company_name=stock.company_name,
