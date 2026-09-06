@@ -84,6 +84,7 @@ function buildOfflineQuote(stock: any) {
   const change = ltp - prevClose;
   return {
     symbol: stock.ticker,
+    currency: stock.currency || 'INR',
     ltp: Math.round(ltp * 100) / 100,
     change: Math.round(change * 100) / 100,
     change_pct: Math.round(changePct * 100) / 100,

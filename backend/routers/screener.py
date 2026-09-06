@@ -870,6 +870,7 @@ def get_stock_quote(symbol: str, db: Session = Depends(get_db)):
         
         return {
             "symbol": symbol,
+            "currency": getattr(info, "currency", stock.currency if stock else "INR"),
             "ltp": round(ltp, 2),
             "change": round(change, 2),
             "change_pct": round(change_pct, 2),
@@ -884,6 +885,7 @@ def get_stock_quote(symbol: str, db: Session = Depends(get_db)):
         print(f"Quote error: {e}")
         return {
             "symbol": symbol, 
+            "currency": stock.currency if stock else "INR",
             "ltp": 0, 
             "change": 0, 
             "change_pct": 0,
