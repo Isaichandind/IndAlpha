@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, Boolean, ForeignKey, Integer
+from sqlalchemy import Column, String, Float, Boolean, ForeignKey, Integer, BigInteger
 from sqlalchemy.orm import relationship
 from database import Base
 
@@ -30,7 +30,7 @@ class DailyPerformance(Base):
     date = Column(String, index=True) # YYYY-MM-DD
     close_price = Column(Float)
     change_pct = Column(Float)
-    volume = Column(Integer)
+    volume = Column(BigInteger)
 
     stock = relationship("Stock", back_populates="daily_performance")
 

@@ -50,9 +50,12 @@ def get_china_equities():
     try:
         res = requests.get('https://en.wikipedia.org/wiki/Hang_Seng_Index', headers=headers)
         df = pd.read_html(io.StringIO(res.text), match='Ticker')[0]
+        import re
         for sym in df['Ticker']:
-            code = str(sym).zfill(4)
-            symbols.add(f"{code}.HK")
+            match = re.search(r'\d+', str(sym))
+            if match:
+                code = match.group(0).zfill(4)
+                symbols.add(f"{code}.HK")
     except Exception as e:
         print(f"Failed Hang Seng: {e}")
         
@@ -60,12 +63,18 @@ def get_china_equities():
     try:
         res = requests.get('https://en.wikipedia.org/wiki/CSI_300_Index', headers=headers)
         df = pd.read_html(io.StringIO(res.text), match='Ticker')[0]
+        import re
         for _, row in df.iterrows():
-            ticker = str(row['Ticker']).zfill(6)
+            raw_ticker = str(row['Ticker'])
+            match = re.search(r'\d+', raw_ticker)
+            if not match:
+                continue
+            ticker = match.group(0).zfill(6)
+            
             exchange = str(row.get('Exchange', ''))
-            if 'Shanghai' in exchange:
+            if 'Shanghai' in exchange or 'SSE' in raw_ticker:
                 symbols.add(f"{ticker}.SS")
-            elif 'Shenzhen' in exchange:
+            elif 'Shenzhen' in exchange or 'SZSE' in raw_ticker:
                 symbols.add(f"{ticker}.SZ")
             else:
                 if ticker.startswith('6'):
