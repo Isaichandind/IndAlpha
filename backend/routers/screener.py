@@ -105,11 +105,13 @@ def filter_stocks(filters: schemas.ScreenerFilter, db: Session = Depends(get_db)
         
     if filters.market_cap_category:
         if filters.market_cap_category == "Large Cap":
-            query = query.filter(models.Stock.market_cap > 20000)
+            query = query.filter(models.Stock.market_cap >= 20000)
         elif filters.market_cap_category == "Mid Cap":
-            query = query.filter(models.Stock.market_cap.between(5000, 20000))
+            query = query.filter(models.Stock.market_cap.between(5000, 19999.99))
         elif filters.market_cap_category == "Small Cap":
-            query = query.filter(models.Stock.market_cap < 5000)
+            query = query.filter(models.Stock.market_cap.between(1000, 4999.99))
+        elif filters.market_cap_category == "Micro Cap":
+            query = query.filter(models.Stock.market_cap < 1000)
     
     if filters.search_text:
         safe_text = _escape_like(filters.search_text)

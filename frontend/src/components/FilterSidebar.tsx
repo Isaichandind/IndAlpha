@@ -103,7 +103,8 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ filters, setFilter
             <option value="">All Categories</option>
             <option value="Large Cap">Large Cap (&gt;20,000 Cr)</option>
             <option value="Mid Cap">Mid Cap (5,000 - 20,000 Cr)</option>
-            <option value="Small Cap">Small Cap (&lt;5,000 Cr)</option>
+            <option value="Small Cap">Small Cap (1,000 - 5,000 Cr)</option>
+            <option value="Micro Cap">Micro Cap (&lt;1,000 Cr)</option>
           </select>
         </div>
         <div className="flex flex-col gap-1.5">
