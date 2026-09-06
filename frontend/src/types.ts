@@ -109,6 +109,8 @@ export interface SelectedStock {
   name: string;
   exchange: string;
   type?: string;
+  currency?: string;
+  country?: string;
 }
 
 export interface MoverStock {

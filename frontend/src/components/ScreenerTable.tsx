@@ -83,7 +83,13 @@ export const ScreenerTable: React.FC<ScreenerTableProps> = ({ stocks, loading, o
 
   const handleRowClick = (stock: StockData) => {
     if (onSelectStock) {
-      const symbol = stock.ticker.includes('.') ? stock.ticker : `${stock.ticker}.NS`;
+      let symbol = stock.ticker;
+      if (!symbol.includes('.')) {
+        if (stock.country === 'India') {
+          symbol = `${symbol}.NS`;
+        }
+      }
+      
       let exchange = 'NSE';
       if (symbol.endsWith('.HK')) exchange = 'HKEX';
       else if (symbol.endsWith('.SS')) exchange = 'SSE';
@@ -95,6 +101,8 @@ export const ScreenerTable: React.FC<ScreenerTableProps> = ({ stocks, loading, o
         symbol,
         name: stock.company_name,
         exchange,
+        currency: stock.currency,
+        country: stock.country,
       });
     }
   };
