@@ -8,10 +8,29 @@ import models
 from seed import seed_db
 import threading
 
+import asyncio
+from datetime import datetime
+import pytz
+
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+
+async def background_sync_task():
+    """Runs inside the FastAPI event loop and syncs live market data every 15 mins during trading hours."""
+    ist = pytz.timezone('Asia/Kolkata')
+    from cron_sync import sync_all_stocks
+    while True:
+        try:
+            now = datetime.now(ist)
+            # Run sync every 15 minutes between 9:00 AM and 4:30 PM IST on weekdays (Mon-Fri)
+            if now.weekday() < 5 and 9 <= now.hour <= 16:
+                print(f"[{now}] Running internal background sync...")
+                await asyncio.to_thread(sync_all_stocks)
+        except Exception as e:
+            print(f"Internal background sync error: {e}")
+        await asyncio.sleep(15 * 60)
 
 # Global rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -91,9 +110,13 @@ async def lifespan(app: FastAPI):
 
     # Run seed in background to avoid blocking boot
     threading.Thread(target=run_fast_seed, daemon=True).start()
+    
+    # Start the continuous intraday market sync background task
+    sync_task = asyncio.create_task(background_sync_task())
+    
     yield
     # Shutdown logic if needed
-
+    sync_task.cancel()
 app = FastAPI(title="IndAlpha PRO API", lifespan=lifespan)
 
 # Attach Rate Limiter
