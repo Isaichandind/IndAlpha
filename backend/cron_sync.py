@@ -51,7 +51,9 @@ def sync_all_stocks():
                             stock.market_cap = mcap / 10000000  # Convert to Crores
                             
                         # Update DailyPerformance history
-                        today_str = datetime.now().strftime("%Y-%m-%d")
+                        import pytz
+                        ist = pytz.timezone('Asia/Kolkata')
+                        today_str = datetime.now(ist).strftime("%Y-%m-%d")
                         dp = db.query(models.DailyPerformance).filter(
                             models.DailyPerformance.ticker == stock.ticker,
                             models.DailyPerformance.date == today_str
