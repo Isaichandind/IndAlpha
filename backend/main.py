@@ -34,6 +34,25 @@ def run_fast_seed():
     finally:
         db.close()
 
+def run_hotfix():
+    try:
+        db = SessionLocal()
+        from seed_global import get_usa_equities, get_china_equities
+        usa_symbols = get_usa_equities()
+        if usa_symbols:
+            db.query(models.Stock).filter(models.Stock.ticker.in_(usa_symbols)).update({"country": "USA", "currency": "USD"}, synchronize_session=False)
+        china_symbols = get_china_equities()
+        if china_symbols:
+            db.query(models.Stock).filter(models.Stock.ticker.in_(china_symbols)).update({"country": "China"}, synchronize_session=False)
+            db.query(models.Stock).filter(models.Stock.ticker.in_(china_symbols)).filter(models.Stock.ticker.endswith('.HK')).update({"currency": "HKD"}, synchronize_session=False)
+            db.query(models.Stock).filter(models.Stock.ticker.in_(china_symbols)).filter(models.Stock.ticker.endswith('.SS')).update({"currency": "CNY"}, synchronize_session=False)
+            db.query(models.Stock).filter(models.Stock.ticker.in_(china_symbols)).filter(models.Stock.ticker.endswith('.SZ')).update({"currency": "CNY"}, synchronize_session=False)
+            db.query(models.Stock).filter(models.Stock.ticker.in_(["FXI", "MCHI", "KWEB", "ASHR"])).update({"currency": "USD"}, synchronize_session=False)
+        db.commit()
+    except Exception as e:
+        print(f"Hotfix failed: {e}")
+    finally:
+        db.close()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Create tables
@@ -65,21 +84,8 @@ async def lifespan(app: FastAPI):
             except Exception:
                 pass
 
-        # Hotfix: Correct USA and China stocks that were mislabeled as 'India' due to seed_global string extraction bug
-        db = SessionLocal()
-        from seed_global import get_usa_equities, get_china_equities
-        usa_symbols = get_usa_equities()
-        if usa_symbols:
-            db.query(models.Stock).filter(models.Stock.ticker.in_(usa_symbols)).update({"country": "USA", "currency": "USD"}, synchronize_session=False)
-        china_symbols = get_china_equities()
-        if china_symbols:
-            db.query(models.Stock).filter(models.Stock.ticker.in_(china_symbols)).update({"country": "China"}, synchronize_session=False)
-            db.query(models.Stock).filter(models.Stock.ticker.in_(china_symbols)).filter(models.Stock.ticker.endswith('.HK')).update({"currency": "HKD"}, synchronize_session=False)
-            db.query(models.Stock).filter(models.Stock.ticker.in_(china_symbols)).filter(models.Stock.ticker.endswith('.SS')).update({"currency": "CNY"}, synchronize_session=False)
-            db.query(models.Stock).filter(models.Stock.ticker.in_(china_symbols)).filter(models.Stock.ticker.endswith('.SZ')).update({"currency": "CNY"}, synchronize_session=False)
-            db.query(models.Stock).filter(models.Stock.ticker.in_(["FXI", "MCHI", "KWEB", "ASHR"])).update({"currency": "USD"}, synchronize_session=False)
-        db.commit()
-        db.close()
+        # The hotfix has been moved to a background thread to avoid blocking application startup
+        threading.Thread(target=run_hotfix, daemon=True).start()
     except Exception as e:
         print(f"Auto-migration or hotfix failed: {e}")
 
