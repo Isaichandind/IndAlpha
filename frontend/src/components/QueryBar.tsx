@@ -7,6 +7,7 @@ interface QueryBarProps {
   onResults: (stocks: StockData[]) => void;
   onLoading: (loading: boolean) => void;
   country: string;
+  performanceDate?: string | null;
 }
 
 const FIELD_SUGGESTIONS = [
@@ -22,7 +23,7 @@ const EXAMPLE_QUERIES = [
   'ROCE > 20 AND PE < 25 AND PB Ratio < 3',
 ];
 
-export function QueryBar({ onResults, onLoading, country }: QueryBarProps) {
+export function QueryBar({ onResults, onLoading, country, performanceDate }: QueryBarProps) {
   const [query, setQuery] = useState('');
   const [showHelp, setShowHelp] = useState(false);
   const [error, setError] = useState('');
@@ -51,7 +52,9 @@ export function QueryBar({ onResults, onLoading, country }: QueryBarProps) {
     setError('');
     onLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/screener/query`, { params: { q: query, country } });
+      const params: any = { q: query, country };
+      if (performanceDate) params.performance_date = performanceDate;
+      const res = await axios.get(`${API_URL}/screener/query`, { params });
       onResults(res.data);
       setResultCount(res.data.length);
     } catch (err) {

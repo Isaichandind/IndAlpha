@@ -30,11 +30,12 @@ const AlphaGauge = ({ score }: { score: number }) => {
   );
 };
 
-type ColumnKey = 'rank' | 'ticker' | 'ltp' | 'change_pct' | 'mcap' | 'alpha' | 'roce' | 'pe' | 'de' | 'ph' | 'delivery' | 'eps' | 'div' | 'pb' | 'bv' | 'tag';
+type ColumnKey = 'rank' | 'ticker' | 'date' | 'ltp' | 'change_pct' | 'mcap' | 'alpha' | 'roce' | 'pe' | 'de' | 'ph' | 'delivery' | 'eps' | 'div' | 'pb' | 'bv' | 'tag';
 
 const ALL_COLUMNS: { key: ColumnKey; label: string; defaultVisible: boolean }[] = [
   { key: 'rank', label: 'Rank', defaultVisible: true },
   { key: 'ticker', label: 'Ticker & Company', defaultVisible: true },
+  { key: 'date', label: 'Date', defaultVisible: true },
   { key: 'ltp', label: 'LTP', defaultVisible: true },
   { key: 'change_pct', label: '1D Change %', defaultVisible: true },
   { key: 'mcap', label: 'Market Cap', defaultVisible: true },
@@ -192,6 +193,11 @@ export const ScreenerTable: React.FC<ScreenerTableProps> = ({ stocks, loading, o
                         ⚠️ Data from: {stock.last_updated_date}
                       </div>
                     )}
+                  </td>
+                )}
+                {visibleColumns.has('date') && (
+                  <td className="px-6 py-4 text-indalpha-muted font-mono text-sm">
+                    {stock.last_updated_date || '-'}
                   </td>
                 )}
                 {visibleColumns.has('ltp') && (

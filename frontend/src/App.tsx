@@ -478,7 +478,12 @@ function App() {
           
           {/* Query Bar */}
           <div className="p-4 pb-0 shrink-0">
-            <QueryBar onResults={handleQueryResults} onLoading={setLoading} country={filters.country || 'India'} />
+            <QueryBar 
+              onResults={handleQueryResults} 
+              onLoading={setLoading} 
+              country={filters.country || 'India'} 
+              performanceDate={filters.performance_date}
+            />
           </div>
           
           <div className="flex-1 p-4 pt-4 overflow-y-auto custom-scrollbar">

@@ -1027,9 +1027,13 @@ def _parse_query_to_filters(query_str: str, db: Session, country: str = "India")
     return base_query
 
 @router.get("/screener/query")
-def query_screener(q: str = "", country: str = "India", db: Session = Depends(get_db)):
+def query_screener(q: str = "", country: str = "India", performance_date: str = None, db: Session = Depends(get_db)):
     """Text-based screener query endpoint."""
     filtered_query = _parse_query_to_filters(q, db, country)
+    
+    if performance_date:
+        filtered_query = filtered_query.join(models.DailyPerformance).filter(models.DailyPerformance.date == performance_date)
+
     stocks = filtered_query.all()
     
     response = []
@@ -1048,6 +1052,16 @@ def query_screener(q: str = "", country: str = "India", db: Session = Depends(ge
             "roe": stock.fundamentals.roe if stock.fundamentals else 0.0,
             "pe_ratio": stock.fundamentals.pe_ratio if stock.fundamentals else 0.0,
             "debt_to_equity": stock.fundamentals.debt_to_equity if stock.fundamentals else 0.0,
+        })
+        
+        # Override ltp and change_pct if filtering by historical date
+        if performance_date and hasattr(stock, 'daily_performance'):
+            hist_record = next((dp for dp in stock.daily_performance if dp.date == performance_date), None)
+            if hist_record:
+                response[-1]["ltp"] = hist_record.close_price
+                response[-1]["change_pct"] = hist_record.change_pct
+        
+        response[-1].update({
             "promoter_holding": stock.fundamentals.promoter_holding if stock.fundamentals else 0.0,
             "pledged_promoter": stock.fundamentals.pledged_promoter if stock.fundamentals else 0.0,
             "delivery_volume": stock.technicals.delivery_volume if stock.technicals else 0.0,
@@ -1088,6 +1102,13 @@ def get_market_movers(date: str = None, country: str = "India", db: Session = De
         }
 @router.get("/market/trading-dates")
 def get_trading_dates(db: Session = Depends(get_db)):
-    # Get distinct dates from DailyPerformance
-    dates = db.query(models.DailyPerformance.date).distinct().order_by(models.DailyPerformance.date.desc()).all()
+    from sqlalchemy.sql import func
+    # Only return dates where we have data for a reasonable number of stocks (> 50)
+    dates = db.query(models.DailyPerformance.date).group_by(
+        models.DailyPerformance.date
+    ).having(
+        func.count(models.DailyPerformance.id) > 50
+    ).order_by(
+        models.DailyPerformance.date.desc()
+    ).all()
     return [date[0] for date in dates]

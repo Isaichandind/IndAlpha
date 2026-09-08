@@ -1,5 +1,5 @@
-import React from 'react';
-import { FilterX, Zap } from 'lucide-react';
+import React, { useState } from 'react';
+import { FilterX, Zap, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import type { ScreenerFilters } from '../types';
 
 interface FilterSidebarProps {
@@ -10,6 +10,8 @@ interface FilterSidebarProps {
 }
 
 export const FilterSidebar: React.FC<FilterSidebarProps> = ({ filters, setFilters, onApply, tradingDates }) => {
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setFilters(prev => ({
@@ -19,9 +21,26 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ filters, setFilter
   };
 
   return (
-    <div className="w-72 bg-indalpha-card border-r border-indalpha-border h-[calc(100vh-64px)] overflow-y-auto p-4 flex flex-col shrink-0">
-      <h2 className="text-sm font-bold text-indalpha-muted uppercase mb-4 tracking-wider">Weightage Model</h2>
-      <div className="mb-6">
+    <div className={`${isCollapsed ? 'w-16' : 'w-72'} bg-indalpha-card border-r border-indalpha-border h-[calc(100vh-64px)] transition-all duration-300 flex flex-col shrink-0 relative group`}>
+      {/* Toggle Button */}
+      <button 
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        className="absolute -right-3 top-6 bg-indalpha-dark border border-indalpha-border rounded-full p-1 text-indalpha-muted hover:text-indalpha-green z-50 opacity-0 group-hover:opacity-100 transition-opacity"
+      >
+        {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+      </button>
+
+      {isCollapsed ? (
+        <div className="flex flex-col items-center py-6 gap-6 w-full h-full">
+          <SlidersHorizontal className="text-indalpha-muted" />
+          <div className="vertical-text text-indalpha-muted tracking-widest text-xs uppercase opacity-50 mt-4" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+            Filters & Model
+          </div>
+        </div>
+      ) : (
+        <div className="p-4 flex flex-col h-full overflow-y-auto custom-scrollbar">
+          <h2 className="text-sm font-bold text-indalpha-muted uppercase mb-4 tracking-wider">Weightage Model</h2>
+          <div className="mb-6">
         <div className="flex justify-between text-xs mb-2">
           <span className="text-indalpha-green font-medium">Fundamental: {filters.alpha_fundamental_weight ?? 65}%</span>
           <span className="text-indalpha-text font-medium">Technical: {100 - (filters.alpha_fundamental_weight ?? 65)}%</span>
@@ -227,6 +246,8 @@ export const FilterSidebar: React.FC<FilterSidebarProps> = ({ filters, setFilter
           Apply Quant Filters
         </button>
       </div>
+        </div>
+      )}
     </div>
   );
 };
