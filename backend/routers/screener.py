@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, contains_eager
 from typing import List
 
 from database import get_db
@@ -81,8 +81,8 @@ def get_market_indices(country: str = "India"):
 @router.post("/screener/filter", response_model=schemas.PaginatedStockResponse)
 def filter_stocks(filters: schemas.ScreenerFilter, db: Session = Depends(get_db)):
     query = db.query(models.Stock).outerjoin(models.Fundamentals).outerjoin(models.Technicals).options(
-        joinedload(models.Stock.fundamentals),
-        joinedload(models.Stock.technicals)
+        contains_eager(models.Stock.fundamentals),
+        contains_eager(models.Stock.technicals)
     )
 
     if filters.country and filters.country != 'Global':
@@ -965,8 +965,8 @@ def _parse_query_to_filters(query_str: str, db: Session, country: str = "India")
     query_str = query_str.strip()
     
     base_query = db.query(models.Stock).outerjoin(models.Fundamentals).outerjoin(models.Technicals).options(
-        joinedload(models.Stock.fundamentals),
-        joinedload(models.Stock.technicals)
+        contains_eager(models.Stock.fundamentals),
+        contains_eager(models.Stock.technicals)
     )
     
     if country and country != 'Global':
